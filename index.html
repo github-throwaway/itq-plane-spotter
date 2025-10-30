@@ -300,7 +300,7 @@
         <div class="footer">
             <div class="last-update" id="last-update">Waiting for data...</div>
             <div style="margin-top: 10px; opacity: 0.7; font-size: 0.9em;">
-                Data updates every 10 seconds | Powered by FlightRadar24
+                Data updates every 10 seconds | Powered by OpenSky Network
             </div>
         </div>
     </div>
@@ -426,16 +426,15 @@
             return `${direction} ${Math.abs(fpm).toFixed(0)} ft/min`;
         }
 
-        // Fetch flights from FlightRadar24 API
+        // Fetch flights from OpenSky Network API (supports CORS)
         async function fetchFlights() {
             try {
-                // Define bounding box around Düsseldorf Airport (approximately 50km radius)
-                const north = DUS_LAT + 0.5;
-                const south = DUS_LAT - 0.5;
-                const west = DUS_LON - 0.7;
-                const east = DUS_LON + 0.7;
+                const minLat = DUS_LAT - 0.5;
+                const maxLat = DUS_LAT + 0.5;
+                const minLon = DUS_LON - 0.7;
+                const maxLon = DUS_LON + 0.7;
 
-                const url = `https://data-live.flightradar24.com/zones/fcgi/feed.js?bounds=${north},${south},${west},${east}&faa=1&satellite=1&mlat=1&adsb=1&flarm=1&estimated=1&maxage=14400&gliders=0&stats=0&air=1&gnd=0&vehicles=0`;
+                const url = `https://opensky-network.org/api/states/all?lamin=${minLat}&lomin=${minLon}&lamax=${maxLat}&lomax=${maxLon}`;
 
                 const response = await fetch(url);
                 if (!response.ok) {
@@ -445,43 +444,38 @@
                 const data = await response.json();
                 lastUpdate = new Date();
 
-                // Convert FlightRadar24 format to our format
+                // Convert OpenSky format to our format
                 const flights = [];
-                for (const [key, value] of Object.entries(data)) {
-                    // Skip metadata entries
-                    if (key === 'full_count' || key === 'version' || !Array.isArray(value)) {
-                        continue;
+                if (data.states) {
+                    for (const state of data.states) {
+                        // OpenSky format: [icao24, callsign, origin_country, time_position, last_contact,
+                        //                  longitude, latitude, baro_altitude, on_ground, velocity,
+                        //                  true_track, vertical_rate, sensors, geo_altitude, squawk, sps, position_source]
+                        const [icao24, callsign, origin_country, time_position, last_contact,
+                               longitude, latitude, baro_altitude, on_ground, velocity,
+                               true_track, vertical_rate] = state;
+
+                        // Skip if on ground or missing critical data
+                        if (on_ground || !latitude || !longitude || !true_track) continue;
+
+                        flights.push({
+                            id: icao24,
+                            latitude: latitude,
+                            longitude: longitude,
+                            heading: true_track,
+                            altitude: baro_altitude || 0,
+                            speed: velocity || 0,
+                            verticalRate: vertical_rate || 0,
+                            callsign: callsign ? callsign.trim() : icao24.toUpperCase(),
+                            origin: '',
+                            destination: '',
+                            aircraftType: '',
+                            registration: icao24
+                        });
                     }
-
-                    // FR24 format: [lat, lon, heading, altitude_ft, speed_kt, squawk, radar, type,
-                    //               registration, timestamp, origin, destination, flight, on_ground,
-                    //               vertical_rate, callsign, source]
-                    const [lat, lon, heading, altitudeFt, speedKt, squawk, radar, aircraftType,
-                           registration, timestamp, origin, destination, flight, onGround,
-                           verticalRate, callsign, source] = value;
-
-                    // Skip if on ground
-                    if (onGround === 1) continue;
-
-                    flights.push({
-                        id: key,
-                        latitude: lat,
-                        longitude: lon,
-                        heading: heading,
-                        altitude: altitudeFt * 0.3048, // Convert feet to meters
-                        altitudeFt: altitudeFt,
-                        speed: speedKt * 0.514444, // Convert knots to m/s
-                        speedKt: speedKt,
-                        verticalRate: verticalRate || 0,
-                        callsign: callsign || flight || key,
-                        origin: origin || '',
-                        destination: destination || '',
-                        aircraftType: aircraftType || '',
-                        registration: registration || ''
-                    });
                 }
 
-                console.log(`Fetched ${flights.length} flights from FlightRadar24`);
+                console.log(`Fetched ${flights.length} flights from OpenSky Network`);
                 return flights;
             } catch (error) {
                 console.error('Error fetching flights:', error);
