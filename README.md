@@ -5,7 +5,7 @@ A real-time flight tracking website for the ITQ office in Düsseldorf, showing a
 ## Features
 
 - Real-time flight positions from OpenSky Network API
-- Enriched flight details (airline, flight number, aircraft type, routes) from FlightRadar24 API
+- Enriched flight details (airline, flight number, aircraft type, routes) from official Düsseldorf Airport API
 - Displays only aircraft using northeast runway (05 departures / 23 arrivals)
 - Filters for planes visible from north-facing office windows
 - Shows origin and destination airports with airline information
@@ -36,7 +36,7 @@ The website is hosted on GitHub Pages and updates automatically with real-time f
 
 - Pure HTML/CSS/JavaScript (no dependencies)
 - OpenSky Network API for real-time aircraft positions
-- FlightRadar24 API for enriched flight details
+- Düsseldorf Airport official API for enriched flight details
 - Canvas-based map visualization
 - Responsive design for desktop and mobile
 
@@ -47,10 +47,11 @@ Simply open `index.html` in a web browser. No build process or server required.
 ## How It Works
 
 1. Fetches real-time aircraft positions within 50km of Düsseldorf Airport from OpenSky Network (every 15 seconds)
-2. Enriches position data with flight details from FlightRadar24 API (every 2 minutes):
+2. Enriches position data with flight details from official Düsseldorf Airport API (every 2 minutes):
    - Airline name and flight number
    - Aircraft type and registration
    - Origin and destination airports
+   - Uses `X-Requested-With: XMLHttpRequest` header for CORS compatibility
 3. Filters for airborne aircraft only
 4. Checks if aircraft is in north-facing viewing angle (315° to 45°)
 5. Determines if plane is using northeast runway based on:
@@ -58,11 +59,11 @@ Simply open `index.html` in a web browser. No build process or server required.
    - Altitude (below 3500m)
    - Vertical rate (climbing for departures, descending for arrivals)
    - Distance from airport (within 10km)
-6. Matches aircraft by callsign and ICAO24 identifier for accurate data correlation
+6. Matches aircraft by callsign for accurate data correlation
 7. Sorts by distance from office (closest first)
 8. Displays on interactive map with flight cards showing all details
 
 ## Data Sources
 
 - **Position Data**: [OpenSky Network](https://opensky-network.org/) - Free, open-source flight tracking API
-- **Flight Details**: [FlightRadar24](https://www.flightradar24.com/) - The world's most popular flight tracking service, providing airline names, flight numbers, aircraft types, and route information
+- **Flight Details**: [Düsseldorf Airport](https://www.dus.com/) - Official airport API providing accurate airline names, flight numbers, aircraft types, and route information for all DUS flights
