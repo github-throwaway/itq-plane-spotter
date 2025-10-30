@@ -366,21 +366,21 @@
 
         // Check if plane is using northeast runway operations (visible from office)
         function isUsingNortheastRunway(heading, altitude, verticalRate, distanceToAirport) {
-            // Only consider planes near the airport (within 25km and below 3000m)
-            if (distanceToAirport > 25 || altitude > 3000) {
+            // Only consider planes near the airport (within 30km and below 5000m to be safe)
+            if (distanceToAirport > 30 || altitude > 5000) {
                 return false;
             }
 
             // Normalize heading
             const normalizedHeading = ((heading % 360) + 360) % 360;
 
-            // Departing on runway 05 (heading northeast: 020-080°)
-            const isDepartingNE = (normalizedHeading >= 20 && normalizedHeading <= 80) &&
-                                  verticalRate >= 0 && altitude < 2000;
+            // Departing on runway 05 (heading northeast: 010-100° - wider range)
+            const isDepartingNE = (normalizedHeading >= 10 && normalizedHeading <= 100) &&
+                                  verticalRate >= -2 && altitude < 3500;
 
-            // Arriving on runway 23 (approaching from NE, heading ~200-260° on final approach)
-            const isArrivingFromNE = (normalizedHeading >= 200 && normalizedHeading <= 260) &&
-                                     verticalRate < 0 && altitude < 2000;
+            // Arriving on runway 23 (approaching from NE, heading ~190-270° - wider range)
+            const isArrivingFromNE = (normalizedHeading >= 190 && normalizedHeading <= 270) &&
+                                     verticalRate <= 2 && altitude < 3500;
 
             return isDepartingNE || isArrivingFromNE;
         }
@@ -481,10 +481,11 @@
                     });
                 }
 
+                console.log(`Fetched ${flights.length} flights from FlightRadar24`);
                 return flights;
             } catch (error) {
                 console.error('Error fetching flights:', error);
-                document.getElementById('status').innerHTML = `<span style="color: #ff6b6b;">Error loading flight data. Retrying in 30 seconds...</span>`;
+                document.getElementById('status').innerHTML = `<span style="color: #ff6b6b;">Error loading flight data. Retrying in 10 seconds...</span>`;
                 return [];
             }
         }
@@ -566,6 +567,9 @@
             const airportX = centerX + airportR * Math.cos(airportAngle);
             const airportY = centerY + airportR * Math.sin(airportAngle);
 
+            // Debug: log airport position
+            console.log(`Airport: ${airportDist.toFixed(1)}km at bearing ${airportBearing.toFixed(0)}° (${getDirection(airportBearing)})`);
+
             ctx.fillStyle = '#f59e0b';
             ctx.beginPath();
             ctx.arc(airportX, airportY, 6, 0, 2 * Math.PI);
@@ -645,13 +649,22 @@
                     true_track: flight.heading
                 };
             }).filter(f => {
+                // Debug logging
+                const inView = isInViewingAngle(f.bearing);
+                const usingNERunway = isUsingNortheastRunway(f.heading, f.altitude, f.verticalRate, f.distanceToAirport);
+
+                if (f.distanceToAirport < 30) {
+                    console.log(`Flight ${f.callsign}: bearing=${f.bearing.toFixed(0)}° inView=${inView}, heading=${f.heading.toFixed(0)}° alt=${f.altitude.toFixed(0)}m vrate=${f.verticalRate} dist=${f.distanceToAirport.toFixed(1)}km runway=${usingNERunway}`);
+                }
+
                 // Must be in viewing angle AND using northeast runway
-                return isInViewingAngle(f.bearing) &&
-                       isUsingNortheastRunway(f.heading, f.altitude, f.verticalRate, f.distanceToAirport);
+                return inView && usingNERunway;
             });
 
             // Sort by distance from office (closest first)
             processedFlights.sort((a, b) => a.distanceFromOffice - b.distanceFromOffice);
+
+            console.log(`After filtering: ${processedFlights.length} flights match criteria`);
 
             // Count by status
             const arriving = processedFlights.filter(f => f.status === 'arriving').length;
@@ -661,6 +674,7 @@
                 <strong>Visible Flights:</strong>
                 <span style="color: #22c55e;">Arriving: ${arriving}</span> |
                 <span style="color: #f59e0b;">Departing: ${departing}</span>
+                <span style="opacity: 0.7; margin-left: 10px;">(${flights.length} total in area)</span>
             `;
 
             // Display flights
