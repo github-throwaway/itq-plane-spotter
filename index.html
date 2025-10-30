@@ -624,83 +624,92 @@
             ctx.fillText('N', centerX, 30);
         }
 
-        // Fetch enriched flight details from Düsseldorf Airport API
+        // Fetch enriched flight details from Düsseldorf Airport API via CORS proxy
         async function fetchFlightDetails() {
             const enrichedFlights = {};
 
             try {
-                // Fetch both arrivals and departures from DUS Airport API
+                // DUS Airport API URLs
                 const arrivalUrl = 'https://www.dus.com/api/sitecore/flightapi/SearchFlightsWithOutParams?lang=en&arrival=true&offset=0&codeshare=true&showDetails=false';
                 const departureUrl = 'https://www.dus.com/api/sitecore/flightapi/SearchFlightsWithOutParams?lang=en&arrival=false&offset=0&codeshare=true&showDetails=false';
 
-                console.log('Fetching DUS Airport data...');
+                console.log('Fetching DUS Airport data via CORS proxy...');
+
+                // Use CORS proxy with X-Requested-With header
+                const proxyUrl = 'https://api.allorigins.win/raw?url=';
 
                 // Fetch arrivals
-                const arrivalsResponse = await fetch(arrivalUrl, {
-                    method: 'GET',
-                    headers: {
-                        'X-Requested-With': 'XMLHttpRequest'
-                    },
-                    credentials: 'omit'
-                });
+                try {
+                    const arrivalsResponse = await fetch(proxyUrl + encodeURIComponent(arrivalUrl), {
+                        method: 'GET',
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest'
+                        }
+                    });
 
-                if (arrivalsResponse.ok) {
-                    const arrivalsData = await arrivalsResponse.json();
-                    const arrivals = Array.isArray(arrivalsData) ? arrivalsData : (arrivalsData.Flights || arrivalsData.flights || []);
+                    if (arrivalsResponse.ok) {
+                        const arrivalsData = await arrivalsResponse.json();
+                        const arrivals = Array.isArray(arrivalsData) ? arrivalsData : (arrivalsData.Flights || arrivalsData.flights || []);
 
-                    for (const flight of arrivals) {
-                        const callsign = flight.FlightNumber || flight.Callsign || '';
-                        if (!callsign) continue;
+                        for (const flight of arrivals) {
+                            const callsign = flight.FlightNumber || flight.Callsign || '';
+                            if (!callsign) continue;
 
-                        const cleanCallsign = callsign.trim().replace(/\s+/g, '');
-                        const flightInfo = {
-                            callsign: callsign.trim(),
-                            flightNumber: flight.FlightNumber || callsign.trim(),
-                            origin: flight.Origin || flight.From || '',
-                            destination: 'EDDL',
-                            aircraftType: flight.AircraftType || flight.Aircraft || '',
-                            registration: flight.Registration || '',
-                            airline: flight.Airline || extractAirlineName(callsign.trim(), flight.FlightNumber)
-                        };
+                            const cleanCallsign = callsign.trim().replace(/\s+/g, '');
+                            const flightInfo = {
+                                callsign: callsign.trim(),
+                                flightNumber: flight.FlightNumber || callsign.trim(),
+                                origin: flight.Origin || flight.From || '',
+                                destination: 'EDDL',
+                                aircraftType: flight.AircraftType || flight.Aircraft || '',
+                                registration: flight.Registration || '',
+                                airline: flight.Airline || extractAirlineName(callsign.trim(), flight.FlightNumber)
+                            };
 
-                        enrichedFlights[cleanCallsign] = flightInfo;
-                        enrichedFlights[callsign.trim()] = flightInfo;
+                            enrichedFlights[cleanCallsign] = flightInfo;
+                            enrichedFlights[callsign.trim()] = flightInfo;
+                        }
+                        console.log(`Fetched ${arrivals.length} arrivals from DUS Airport`);
                     }
-                    console.log(`Fetched ${arrivals.length} arrivals from DUS Airport`);
+                } catch (err) {
+                    console.error('Error fetching arrivals:', err);
                 }
 
                 // Fetch departures
-                const departuresResponse = await fetch(departureUrl, {
-                    method: 'GET',
-                    headers: {
-                        'X-Requested-With': 'XMLHttpRequest'
-                    },
-                    credentials: 'omit'
-                });
+                try {
+                    const departuresResponse = await fetch(proxyUrl + encodeURIComponent(departureUrl), {
+                        method: 'GET',
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest'
+                        }
+                    });
 
-                if (departuresResponse.ok) {
-                    const departuresData = await departuresResponse.json();
-                    const departures = Array.isArray(departuresData) ? departuresData : (departuresData.Flights || departuresData.flights || []);
+                    if (departuresResponse.ok) {
+                        const departuresData = await departuresResponse.json();
+                        const departures = Array.isArray(departuresData) ? departuresData : (departuresData.Flights || departuresData.flights || []);
 
-                    for (const flight of departures) {
-                        const callsign = flight.FlightNumber || flight.Callsign || '';
-                        if (!callsign) continue;
+                        for (const flight of departures) {
+                            const callsign = flight.FlightNumber || flight.Callsign || '';
+                            if (!callsign) continue;
 
-                        const cleanCallsign = callsign.trim().replace(/\s+/g, '');
-                        const flightInfo = {
-                            callsign: callsign.trim(),
-                            flightNumber: flight.FlightNumber || callsign.trim(),
-                            origin: 'EDDL',
-                            destination: flight.Destination || flight.To || '',
-                            aircraftType: flight.AircraftType || flight.Aircraft || '',
-                            registration: flight.Registration || '',
-                            airline: flight.Airline || extractAirlineName(callsign.trim(), flight.FlightNumber)
-                        };
+                            const cleanCallsign = callsign.trim().replace(/\s+/g, '');
+                            const flightInfo = {
+                                callsign: callsign.trim(),
+                                flightNumber: flight.FlightNumber || callsign.trim(),
+                                origin: 'EDDL',
+                                destination: flight.Destination || flight.To || '',
+                                aircraftType: flight.AircraftType || flight.Aircraft || '',
+                                registration: flight.Registration || '',
+                                airline: flight.Airline || extractAirlineName(callsign.trim(), flight.FlightNumber)
+                            };
 
-                        enrichedFlights[cleanCallsign] = flightInfo;
-                        enrichedFlights[callsign.trim()] = flightInfo;
+                            enrichedFlights[cleanCallsign] = flightInfo;
+                            enrichedFlights[callsign.trim()] = flightInfo;
+                        }
+                        console.log(`Fetched ${departures.length} departures from DUS Airport`);
                     }
-                    console.log(`Fetched ${departures.length} departures from DUS Airport`);
+                } catch (err) {
+                    console.error('Error fetching departures:', err);
                 }
 
                 console.log(`Total flights in cache: ${Object.keys(enrichedFlights).length / 2}`);
