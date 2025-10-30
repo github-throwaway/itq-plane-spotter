@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ITQ Plane Spotter - Düsseldorf Airport</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            color: #ffffff;
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+        }
+
+        h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .location-info {
+            font-size: 1.1em;
+            opacity: 0.9;
+            margin-top: 10px;
+        }
+
+        .status {
+            text-align: center;
+            padding: 15px;
+            margin-bottom: 20px;
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 10px;
+            font-size: 1.1em;
+        }
+
+        .loading {
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.6; }
+        }
+
+        .flights-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .flight-card {
+            background: rgba(255, 255, 255, 0.95);
+            color: #1e3c72;
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            animation: slideIn 0.5s ease;
+        }
+
+        .flight-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 48px rgba(0,0,0,0.3);
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .flight-card.arriving {
+            border-left: 5px solid #22c55e;
+        }
+
+        .flight-card.departing {
+            border-left: 5px solid #f59e0b;
+        }
+
+        .flight-card.passing {
+            border-left: 5px solid #3b82f6;
+        }
+
+        .flight-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid rgba(30, 60, 114, 0.1);
+        }
+
+        .callsign {
+            font-size: 1.8em;
+            font-weight: bold;
+            color: #1e3c72;
+        }
+
+        .status-badge {
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-size: 0.9em;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+
+        .status-badge.arriving {
+            background: #22c55e;
+            color: white;
+        }
+
+        .status-badge.departing {
+            background: #f59e0b;
+            color: white;
+        }
+
+        .status-badge.passing {
+            background: #3b82f6;
+            color: white;
+        }
+
+        .flight-details {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            margin-top: 15px;
+        }
+
+        .detail-item {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .detail-label {
+            font-size: 0.85em;
+            color: #64748b;
+            margin-bottom: 4px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .detail-value {
+            font-size: 1.2em;
+            font-weight: 600;
+            color: #1e3c72;
+        }
+
+        .origin-dest {
+            grid-column: span 2;
+            margin-top: 10px;
+            padding: 15px;
+            background: rgba(30, 60, 114, 0.05);
+            border-radius: 10px;
+            text-align: center;
+        }
+
+        .origin-dest .detail-value {
+            font-size: 1.4em;
+            color: #1e3c72;
+        }
+
+        .distance-info {
+            grid-column: span 2;
+            text-align: center;
+            padding: 10px;
+            background: rgba(30, 60, 114, 0.08);
+            border-radius: 8px;
+            margin-top: 10px;
+        }
+
+        .distance-info .detail-value {
+            font-size: 1.1em;
+        }
+
+        .footer {
+            text-align: center;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            margin-top: 30px;
+        }
+
+        .last-update {
+            font-size: 0.95em;
+            opacity: 0.8;
+        }
+
+        .no-flights {
+            text-align: center;
+            padding: 60px 20px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            font-size: 1.3em;
+        }
+
+        .plane-icon {
+            font-size: 3em;
+            margin-bottom: 20px;
+        }
+
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 1.8em;
+            }
+
+            .flights-container {
+                grid-template-columns: 1fr;
+            }
+
+            .callsign {
+                font-size: 1.4em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>✈️ ITQ Plane Spotter</h1>
+            <div class="location-info">
+                <strong>Düsseldorf Airport (EDDL)</strong><br>
+                Viewing from: Wanheimer Str. 43, 40472 Düsseldorf (Looking North)
+            </div>
+        </header>
+
+        <div class="status" id="status">
+            <span class="loading">Loading flight data...</span>
+        </div>
+
+        <div class="flights-container" id="flights-container">
+        </div>
+
+        <div class="footer">
+            <div class="last-update" id="last-update">Waiting for data...</div>
+            <div style="margin-top: 10px; opacity: 0.7; font-size: 0.9em;">
+                Data updates every 30 seconds | Powered by OpenSky Network
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Düsseldorf Airport coordinates
+        const DUS_LAT = 51.2895;
+        const DUS_LON = 6.7668;
+
+        // Your office coordinates
+        const OFFICE_LAT = 51.2445;
+        const OFFICE_LON = 6.7891;
+
+        // Radius in degrees (roughly 50km)
+        const SEARCH_RADIUS = 0.5;
+
+        let lastUpdate = null;
+
+        // Calculate distance between two points (Haversine formula)
+        function calculateDistance(lat1, lon1, lat2, lon2) {
+            const R = 6371; // Earth's radius in km
+            const dLat = (lat2 - lat1) * Math.PI / 180;
+            const dLon = (lon2 - lon1) * Math.PI / 180;
+            const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                     Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                     Math.sin(dLon/2) * Math.sin(dLon/2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+            return R * c;
+        }
+
+        // Calculate bearing from office to plane
+        function calculateBearing(lat1, lon1, lat2, lon2) {
+            const dLon = (lon2 - lon1) * Math.PI / 180;
+            const y = Math.sin(dLon) * Math.cos(lat2 * Math.PI / 180);
+            const x = Math.cos(lat1 * Math.PI / 180) * Math.sin(lat2 * Math.PI / 180) -
+                     Math.sin(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.cos(dLon);
+            const bearing = Math.atan2(y, x) * 180 / Math.PI;
+            return (bearing + 360) % 360;
+        }
+
+        // Get direction from bearing
+        function getDirection(bearing) {
+            const directions = ['N', 'NNE', 'NE', 'ENE', 'E', 'ESE', 'SE', 'SSE', 'S', 'SSW', 'SW', 'WSW', 'W', 'WNW', 'NW', 'NNW'];
+            const index = Math.round(bearing / 22.5) % 16;
+            return directions[index];
+        }
+
+        // Determine flight status (arriving, departing, or passing)
+        function determineFlightStatus(lat, lon, altitude, verticalRate, velocity) {
+            const distanceToAirport = calculateDistance(lat, lon, DUS_LAT, DUS_LON);
+
+            // Within 20km of airport and below 3000m altitude
+            if (distanceToAirport < 20) {
+                if (altitude < 3000) {
+                    // Descending = arriving, ascending = departing
+                    if (verticalRate < -1) {
+                        return 'arriving';
+                    } else if (verticalRate > 1) {
+                        return 'departing';
+                    }
+                }
+            }
+
+            // If moving slow and low near airport, likely arriving/departing
+            if (distanceToAirport < 10 && altitude < 2000) {
+                if (verticalRate < 0 || velocity < 150) {
+                    return 'arriving';
+                } else {
+                    return 'departing';
+                }
+            }
+
+            return 'passing';
+        }
+
+        // Format altitude
+        function formatAltitude(meters) {
+            if (!meters && meters !== 0) return 'N/A';
+            const feet = Math.round(meters * 3.28084);
+            return `${meters.toFixed(0)}m (${feet}ft)`;
+        }
+
+        // Format speed
+        function formatSpeed(metersPerSecond) {
+            if (!metersPerSecond && metersPerSecond !== 0) return 'N/A';
+            const kmh = metersPerSecond * 3.6;
+            const knots = metersPerSecond * 1.94384;
+            return `${kmh.toFixed(0)} km/h (${knots.toFixed(0)} kt)`;
+        }
+
+        // Format vertical rate
+        function formatVerticalRate(rate) {
+            if (!rate && rate !== 0) return 'Level';
+            const fpm = rate * 196.85; // m/s to ft/min
+            const direction = rate > 0 ? '↑' : '↓';
+            return `${direction} ${Math.abs(fpm).toFixed(0)} ft/min`;
+        }
+
+        // Fetch flights from OpenSky Network API
+        async function fetchFlights() {
+            try {
+                const minLat = DUS_LAT - SEARCH_RADIUS;
+                const maxLat = DUS_LAT + SEARCH_RADIUS;
+                const minLon = DUS_LON - SEARCH_RADIUS;
+                const maxLon = DUS_LON + SEARCH_RADIUS;
+
+                const url = `https://opensky-network.org/api/states/all?lamin=${minLat}&lomin=${minLon}&lamax=${maxLat}&lomax=${maxLon}`;
+
+                const response = await fetch(url);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const data = await response.json();
+                lastUpdate = new Date();
+
+                return data.states || [];
+            } catch (error) {
+                console.error('Error fetching flights:', error);
+                document.getElementById('status').innerHTML = `<span style="color: #ff6b6b;">Error loading flight data. Retrying in 30 seconds...</span>`;
+                return [];
+            }
+        }
+
+        // Display flights
+        function displayFlights(flights) {
+            const container = document.getElementById('flights-container');
+
+            if (!flights || flights.length === 0) {
+                container.innerHTML = `
+                    <div class="no-flights">
+                        <div class="plane-icon">🔍</div>
+                        <div>No flights detected in the area</div>
+                        <div style="font-size: 0.8em; margin-top: 15px; opacity: 0.7;">
+                            Searching for aircraft near Düsseldorf Airport...
+                        </div>
+                    </div>
+                `;
+                document.getElementById('status').innerHTML = `<span>No active flights | Monitoring ${flights.length} aircraft</span>`;
+                return;
+            }
+
+            // Process and sort flights
+            const processedFlights = flights.map(flight => {
+                const [icao24, callsign, origin_country, time_position, last_contact,
+                       longitude, latitude, baro_altitude, on_ground, velocity,
+                       true_track, vertical_rate] = flight;
+
+                const distanceFromOffice = calculateDistance(OFFICE_LAT, OFFICE_LON, latitude, longitude);
+                const bearing = calculateBearing(OFFICE_LAT, OFFICE_LON, latitude, longitude);
+                const direction = getDirection(bearing);
+                const status = determineFlightStatus(latitude, longitude, baro_altitude, vertical_rate, velocity);
+
+                return {
+                    icao24,
+                    callsign: callsign ? callsign.trim() : icao24.toUpperCase(),
+                    origin_country,
+                    latitude,
+                    longitude,
+                    altitude: baro_altitude,
+                    velocity,
+                    true_track,
+                    vertical_rate,
+                    on_ground,
+                    distanceFromOffice,
+                    bearing,
+                    direction,
+                    status
+                };
+            }).filter(f => !f.on_ground); // Only show airborne flights
+
+            // Sort by distance from office (closest first)
+            processedFlights.sort((a, b) => a.distanceFromOffice - b.distanceFromOffice);
+
+            // Count by status
+            const arriving = processedFlights.filter(f => f.status === 'arriving').length;
+            const departing = processedFlights.filter(f => f.status === 'departing').length;
+            const passing = processedFlights.filter(f => f.status === 'passing').length;
+
+            document.getElementById('status').innerHTML = `
+                <strong>Active Flights:</strong>
+                <span style="color: #22c55e;">Arriving: ${arriving}</span> |
+                <span style="color: #f59e0b;">Departing: ${departing}</span> |
+                <span style="color: #3b82f6;">Passing: ${passing}</span>
+            `;
+
+            // Display flights
+            container.innerHTML = processedFlights.map(flight => `
+                <div class="flight-card ${flight.status}">
+                    <div class="flight-header">
+                        <div class="callsign">${flight.callsign}</div>
+                        <div class="status-badge ${flight.status}">${flight.status}</div>
+                    </div>
+                    <div class="flight-details">
+                        <div class="detail-item">
+                            <div class="detail-label">Altitude</div>
+                            <div class="detail-value">${formatAltitude(flight.altitude)}</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">Speed</div>
+                            <div class="detail-value">${formatSpeed(flight.velocity)}</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">Heading</div>
+                            <div class="detail-value">${flight.true_track ? flight.true_track.toFixed(0) + '°' : 'N/A'}</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">Vertical Rate</div>
+                            <div class="detail-value">${formatVerticalRate(flight.vertical_rate)}</div>
+                        </div>
+                        <div class="origin-dest">
+                            <div class="detail-label">Origin Country</div>
+                            <div class="detail-value">${flight.origin_country || 'Unknown'}</div>
+                        </div>
+                        <div class="distance-info">
+                            <div class="detail-label">From Your Location</div>
+                            <div class="detail-value">${flight.distanceFromOffice.toFixed(1)} km ${flight.direction} (${flight.bearing.toFixed(0)}°)</div>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+
+            // Update last update time
+            document.getElementById('last-update').textContent = `Last updated: ${lastUpdate.toLocaleTimeString()}`;
+        }
+
+        // Update flights
+        async function updateFlights() {
+            const flights = await fetchFlights();
+            displayFlights(flights);
+        }
+
+        // Initial load
+        updateFlights();
+
+        // Refresh every 30 seconds
+        setInterval(updateFlights, 30000);
+    </script>
+</body>
+</html>
