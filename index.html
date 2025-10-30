@@ -328,6 +328,8 @@
         let lastFlightsData = []; // Cache last successful flight data
         let flightDetailsCache = {}; // Cache for enriched flight details
         let lastDetailsFetch = 0; // Track when we last fetched details
+        let dusArrivals = []; // Store DUS arrivals separately for time-based matching
+        let dusDepartures = []; // Store DUS departures separately for time-based matching
 
         // Calculate distance between two points (Haversine formula)
         function calculateDistance(lat1, lon1, lat2, lon2) {
@@ -663,42 +665,26 @@
                             console.log('Sample arrival:', JSON.stringify(arrivals[0]));
                         }
 
-                        for (const flight of arrivals) {
+                        // Store arrivals for time-based matching
+                        dusArrivals = arrivals.map(flight => {
                             const flightNumber = flight.flightNumber || '';
-                            if (!flightNumber) continue;
-
-                            // Extract airline codes and city name
-                            const icaoCode = flight.airline?.icaoCode || '';
-                            const iataCode = flight.airline?.iataCode || '';
                             const airlineName = flight.airline?.name || '';
                             const originCity = flight.destination?.city?.name || flight.destination?.name || '';
                             const originIata = flight.destination?.iataCode || '';
 
-                            // Clean flight number (remove spaces) and extract numeric part
-                            const cleanFlightNumber = flightNumber.trim().replace(/\s+/g, '');
-                            const numericPart = flightNumber.replace(/[^0-9]/g, '');
+                            // Parse times (estimated > actual > scheduled)
+                            const timeStr = flight.actualTime || flight.estimatedTime || flight.scheduledTime;
+                            const time = timeStr ? new Date(timeStr) : null;
 
-                            const flightInfo = {
+                            return {
                                 flightNumber: flightNumber.trim(),
-                                origin: originIata || originCity,
-                                destination: 'EDDL',
+                                origin: originCity || originIata,
+                                destination: 'Düsseldorf',
                                 airline: airlineName,
-                                aircraftType: '', // Not provided in this API response
-                                registration: ''
+                                time: time,
+                                timeStr: timeStr
                             };
-
-                            // Store by IATA flight number (e.g., "BT233")
-                            enrichedFlights[cleanFlightNumber] = flightInfo;
-                            enrichedFlights[flightNumber.trim()] = flightInfo;
-
-                            // Store by ICAO code + number (e.g., "BTI233" for OpenSky matching)
-                            if (icaoCode && numericPart) {
-                                const icaoCallsign = icaoCode + numericPart;
-                                enrichedFlights[icaoCallsign] = flightInfo;
-                                enrichedFlights[icaoCallsign.toLowerCase()] = flightInfo;
-                                console.log(`Mapping arrival ${icaoCallsign} to ${flightNumber.trim()}`);
-                            }
-                        }
+                        }).filter(f => f.flightNumber && f.time);
                         console.log(`Fetched ${arrivals.length} arrivals from DUS Airport`);
                     } else {
                         console.log('Arrivals request failed or returned bad data');
@@ -732,42 +718,26 @@
                             console.log('Sample departure:', JSON.stringify(departures[0]));
                         }
 
-                        for (const flight of departures) {
+                        // Store departures for time-based matching
+                        dusDepartures = departures.map(flight => {
                             const flightNumber = flight.flightNumber || '';
-                            if (!flightNumber) continue;
-
-                            // Extract airline codes and city name
-                            const icaoCode = flight.airline?.icaoCode || '';
-                            const iataCode = flight.airline?.iataCode || '';
                             const airlineName = flight.airline?.name || '';
                             const destCity = flight.destination?.city?.name || flight.destination?.name || '';
                             const destIata = flight.destination?.iataCode || '';
 
-                            // Clean flight number (remove spaces) and extract numeric part
-                            const cleanFlightNumber = flightNumber.trim().replace(/\s+/g, '');
-                            const numericPart = flightNumber.replace(/[^0-9]/g, '');
+                            // Parse times (estimated > actual > scheduled)
+                            const timeStr = flight.actualTime || flight.estimatedTime || flight.scheduledTime;
+                            const time = timeStr ? new Date(timeStr) : null;
 
-                            const flightInfo = {
+                            return {
                                 flightNumber: flightNumber.trim(),
-                                origin: 'EDDL',
-                                destination: destIata || destCity,
+                                origin: 'Düsseldorf',
+                                destination: destCity || destIata,
                                 airline: airlineName,
-                                aircraftType: '', // Not provided in this API response
-                                registration: ''
+                                time: time,
+                                timeStr: timeStr
                             };
-
-                            // Store by IATA flight number (e.g., "EW9412")
-                            enrichedFlights[cleanFlightNumber] = flightInfo;
-                            enrichedFlights[flightNumber.trim()] = flightInfo;
-
-                            // Store by ICAO code + number (e.g., "EWG9412" for OpenSky matching)
-                            if (icaoCode && numericPart) {
-                                const icaoCallsign = icaoCode + numericPart;
-                                enrichedFlights[icaoCallsign] = flightInfo;
-                                enrichedFlights[icaoCallsign.toLowerCase()] = flightInfo;
-                                console.log(`Mapping departure ${icaoCallsign} to ${flightNumber.trim()}`);
-                            }
-                        }
+                        }).filter(f => f.flightNumber && f.time);
                         console.log(`Fetched ${departures.length} departures from DUS Airport`);
                     } else {
                         console.log('Departures request failed or returned bad data');
@@ -776,12 +746,39 @@
                     console.error('Error fetching departures:', err);
                 }
 
-                console.log(`Total flights in cache: ${Object.keys(enrichedFlights).length / 2}`);
+                console.log(`Stored ${dusArrivals.length} arrivals and ${dusDepartures.length} departures for time-based matching`);
                 return enrichedFlights;
             } catch (error) {
                 console.error('Error fetching DUS Airport data:', error);
                 return enrichedFlights;
             }
+        }
+
+        // Match flight by time (more reliable than callsign matching)
+        function matchFlightByTime(status, distanceToAirport) {
+            const now = new Date();
+            const timeWindow = 30 * 60 * 1000; // 30 minutes in milliseconds
+
+            // Choose the right list based on arrival/departure
+            const flightList = status === 'arriving' ? dusArrivals : dusDepartures;
+
+            // Find flights within time window
+            const candidates = flightList.filter(f => {
+                const timeDiff = Math.abs(f.time - now);
+                return timeDiff <= timeWindow;
+            });
+
+            if (candidates.length === 0) return null;
+
+            // Sort by time proximity (closest to now)
+            candidates.sort((a, b) => Math.abs(a.time - now) - Math.abs(b.time - now));
+
+            // Return the closest match
+            const match = candidates[0];
+            const minutesAway = Math.round((match.time - now) / 60000);
+            console.log(`Time-matched ${status} flight: ${match.flightNumber} (${match.airline}) ${minutesAway > 0 ? 'in ' + minutesAway + ' min' : Math.abs(minutesAway) + ' min ago'}`);
+
+            return match;
         }
 
         // Extract airline name from callsign or flight number
@@ -899,30 +896,8 @@
                 const direction = getDirection(bearing);
                 const status = determineFlightStatus(flight.heading, flight.altitude, flight.verticalRate, distanceToAirport);
 
-                // Try to match with DUS Airport data
-                // OpenSky gives callsigns like "UAE33Y" (ICAO code + number + suffix)
-                // We've stored by ICAO callsign (e.g., "UAE33")
-                const callsignClean = flight.callsign.trim().replace(/\s+/g, '').toUpperCase();
-
-                // Try direct match first
-                let details = flightDetailsCache[callsignClean] ||
-                             flightDetailsCache[callsignClean.toLowerCase()] ||
-                             {};
-
-                // If no match, try removing trailing letter (e.g., "UAE33Y" -> "UAE33")
-                if (!details.flightNumber && callsignClean.length > 0) {
-                    // Try removing last character if it's a letter
-                    const lastChar = callsignClean[callsignClean.length - 1];
-                    if (lastChar >= 'A' && lastChar <= 'Z') {
-                        const withoutSuffix = callsignClean.substring(0, callsignClean.length - 1);
-                        details = flightDetailsCache[withoutSuffix] ||
-                                 flightDetailsCache[withoutSuffix.toLowerCase()] ||
-                                 {};
-                        if (details.flightNumber) {
-                            console.log(`Matched ${flight.callsign} to ${details.flightNumber} (removed suffix)`);
-                        }
-                    }
-                }
+                // Match with DUS Airport data by time (more reliable than callsign)
+                const details = matchFlightByTime(status, distanceToAirport) || {};
 
                 return {
                     ...flight,
@@ -932,13 +907,14 @@
                     direction,
                     status,
                     true_track: flight.heading,
-                    // Enriched data from DUS airport or fallback to OpenSky
+                    // Enriched data from DUS airport (time-matched) or fallback to OpenSky
                     flightNumber: details.flightNumber || flight.callsign,
                     originAirport: details.origin || '',
                     destinationAirport: details.destination || '',
-                    aircraftModel: details.aircraftType || '',
-                    aircraftTypeCode: details.aircraftType || '',
-                    airline: details.airline || ''
+                    airline: details.airline || '',
+                    // Keep registration/ID as aircraft identifier since DUS doesn't provide type
+                    aircraftModel: flight.registration || flight.id || '',
+                    aircraftTypeCode: flight.registration || flight.id || ''
                 };
             }).filter(f => {
                 // Debug logging
@@ -1121,7 +1097,7 @@
                 }
 
                 lastDetailsFetch = now;
-                console.log(`Flight details cache updated: ${Object.keys(flightDetailsCache).length} entries from DUS Airport`);
+                console.log(`Flight details updated: ${dusArrivals.length} arrivals, ${dusDepartures.length} departures from DUS Airport`);
             }
         }
 
