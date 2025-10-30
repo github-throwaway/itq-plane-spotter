@@ -656,25 +656,41 @@
 
                     if (arrivalsResponse.ok && responseText && !responseText.startsWith('Bad Request')) {
                         const arrivalsData = JSON.parse(responseText);
-                        const arrivals = Array.isArray(arrivalsData) ? arrivalsData : (arrivalsData.Flights || arrivalsData.flights || []);
+                        const arrivals = arrivalsData.data?.flights || arrivalsData.Flights || arrivalsData.flights || [];
+
+                        console.log(`Found ${arrivals.length} arrivals in DUS API response`);
+                        if (arrivals.length > 0) {
+                            console.log('Sample arrival:', JSON.stringify(arrivals[0]));
+                        }
 
                         for (const flight of arrivals) {
-                            const callsign = flight.FlightNumber || flight.Callsign || '';
-                            if (!callsign) continue;
+                            const flightNumber = flight.flightNumber || flight.FlightNumber || '';
+                            const callsign = flight.callsign || flight.Callsign || '';
 
-                            const cleanCallsign = callsign.trim().replace(/\s+/g, '');
+                            if (!flightNumber) continue;
+
+                            // Clean flight number (remove spaces)
+                            const cleanFlightNumber = flightNumber.trim().replace(/\s+/g, '');
+
                             const flightInfo = {
-                                callsign: callsign.trim(),
-                                flightNumber: flight.FlightNumber || callsign.trim(),
-                                origin: flight.Origin || flight.From || '',
-                                destination: 'EDDL',
-                                aircraftType: flight.AircraftType || flight.Aircraft || '',
-                                registration: flight.Registration || '',
-                                airline: flight.Airline || extractAirlineName(callsign.trim(), flight.FlightNumber)
+                                callsign: callsign || cleanFlightNumber,
+                                flightNumber: flightNumber.trim(),
+                                origin: flight.origin || flight.Origin || flight.airportFrom || '',
+                                destination: flight.destination || flight.Destination || flight.airportTo || 'EDDL',
+                                aircraftType: flight.aircraftType || flight.AircraftType || flight.aircraft || '',
+                                registration: flight.registration || flight.Registration || '',
+                                airline: flight.airline || flight.Airline || extractAirlineName(flightNumber.trim(), flightNumber)
                             };
 
-                            enrichedFlights[cleanCallsign] = flightInfo;
-                            enrichedFlights[callsign.trim()] = flightInfo;
+                            // Store by cleaned flight number
+                            enrichedFlights[cleanFlightNumber] = flightInfo;
+                            enrichedFlights[flightNumber.trim()] = flightInfo;
+
+                            // Also store by callsign if available
+                            if (callsign) {
+                                enrichedFlights[callsign.trim()] = flightInfo;
+                                enrichedFlights[callsign.trim().replace(/\s+/g, '')] = flightInfo;
+                            }
                         }
                         console.log(`Fetched ${arrivals.length} arrivals from DUS Airport`);
                     } else {
@@ -702,25 +718,41 @@
 
                     if (departuresResponse.ok && responseText && !responseText.startsWith('Bad Request')) {
                         const departuresData = JSON.parse(responseText);
-                        const departures = Array.isArray(departuresData) ? departuresData : (departuresData.Flights || departuresData.flights || []);
+                        const departures = departuresData.data?.flights || departuresData.Flights || departuresData.flights || [];
+
+                        console.log(`Found ${departures.length} departures in DUS API response`);
+                        if (departures.length > 0) {
+                            console.log('Sample departure:', JSON.stringify(departures[0]));
+                        }
 
                         for (const flight of departures) {
-                            const callsign = flight.FlightNumber || flight.Callsign || '';
-                            if (!callsign) continue;
+                            const flightNumber = flight.flightNumber || flight.FlightNumber || '';
+                            const callsign = flight.callsign || flight.Callsign || '';
 
-                            const cleanCallsign = callsign.trim().replace(/\s+/g, '');
+                            if (!flightNumber) continue;
+
+                            // Clean flight number (remove spaces)
+                            const cleanFlightNumber = flightNumber.trim().replace(/\s+/g, '');
+
                             const flightInfo = {
-                                callsign: callsign.trim(),
-                                flightNumber: flight.FlightNumber || callsign.trim(),
-                                origin: 'EDDL',
-                                destination: flight.Destination || flight.To || '',
-                                aircraftType: flight.AircraftType || flight.Aircraft || '',
-                                registration: flight.Registration || '',
-                                airline: flight.Airline || extractAirlineName(callsign.trim(), flight.FlightNumber)
+                                callsign: callsign || cleanFlightNumber,
+                                flightNumber: flightNumber.trim(),
+                                origin: flight.origin || flight.Origin || flight.airportFrom || 'EDDL',
+                                destination: flight.destination || flight.Destination || flight.airportTo || '',
+                                aircraftType: flight.aircraftType || flight.AircraftType || flight.aircraft || '',
+                                registration: flight.registration || flight.Registration || '',
+                                airline: flight.airline || flight.Airline || extractAirlineName(flightNumber.trim(), flightNumber)
                             };
 
-                            enrichedFlights[cleanCallsign] = flightInfo;
-                            enrichedFlights[callsign.trim()] = flightInfo;
+                            // Store by cleaned flight number
+                            enrichedFlights[cleanFlightNumber] = flightInfo;
+                            enrichedFlights[flightNumber.trim()] = flightInfo;
+
+                            // Also store by callsign if available
+                            if (callsign) {
+                                enrichedFlights[callsign.trim()] = flightInfo;
+                                enrichedFlights[callsign.trim().replace(/\s+/g, '')] = flightInfo;
+                            }
                         }
                         console.log(`Fetched ${departures.length} departures from DUS Airport`);
                     } else {
@@ -853,13 +885,32 @@
                 const direction = getDirection(bearing);
                 const status = determineFlightStatus(flight.heading, flight.altitude, flight.verticalRate, distanceToAirport);
 
-                // Try to match with FR24 data by callsign or ICAO24
+                // Try to match with DUS Airport data
+                // OpenSky gives callsigns like "UAE33Y", DUS gives flight numbers like "EK 54"
                 const callsignClean = flight.callsign.trim().replace(/\s+/g, '');
                 const icao24 = flight.registration || flight.id;
-                const details = flightDetailsCache[callsignClean] ||
-                               flightDetailsCache[flight.callsign.trim()] ||
-                               flightDetailsCache[icao24] ||
-                               {};
+
+                // Try multiple matching strategies
+                let details = flightDetailsCache[callsignClean] ||
+                             flightDetailsCache[flight.callsign.trim()] ||
+                             flightDetailsCache[icao24] ||
+                             {};
+
+                // If no match, try matching by airline code from callsign
+                // e.g., "UAE33Y" -> try "EK" prefix, "DLH123" -> try "LH" prefix
+                if (!details.flightNumber) {
+                    const callsignUpper = callsignClean.toUpperCase();
+                    // Try various airline code patterns
+                    for (const key of Object.keys(flightDetailsCache)) {
+                        const keyUpper = key.replace(/\s+/g, '').toUpperCase();
+                        // Check if flight number starts with similar pattern
+                        if (keyUpper.length >= 2 && callsignUpper.startsWith(keyUpper.substring(0, 2))) {
+                            details = flightDetailsCache[key];
+                            console.log(`Matched ${flight.callsign} to ${key} by airline code`);
+                            break;
+                        }
+                    }
+                }
 
                 return {
                     ...flight,
