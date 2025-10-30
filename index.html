@@ -300,7 +300,7 @@
         <div class="footer">
             <div class="last-update" id="last-update">Waiting for data...</div>
             <div style="margin-top: 10px; opacity: 0.7; font-size: 0.9em;">
-                Position data: OpenSky Network (every 15 sec) | Flight details: FlightRadar24 (every 2 min)
+                Position data: OpenSky Network (every 15 sec) | Flight details: Düsseldorf Airport (every 2 min)
             </div>
         </div>
     </div>
@@ -624,72 +624,90 @@
             ctx.fillText('N', centerX, 30);
         }
 
-        // Fetch enriched flight details from FlightRadar24
+        // Fetch enriched flight details from Düsseldorf Airport API
         async function fetchFlightDetails() {
+            const enrichedFlights = {};
+
             try {
-                // Get data for our area from FlightRadar24
-                const minLat = DUS_LAT - 0.5;
-                const maxLat = DUS_LAT + 0.5;
-                const minLon = DUS_LON - 0.7;
-                const maxLon = DUS_LON + 0.7;
+                // Fetch both arrivals and departures from DUS Airport API
+                const arrivalUrl = 'https://www.dus.com/api/sitecore/flightapi/SearchFlightsWithOutParams?lang=en&arrival=true&offset=0&codeshare=true&showDetails=false';
+                const departureUrl = 'https://www.dus.com/api/sitecore/flightapi/SearchFlightsWithOutParams?lang=en&arrival=false&offset=0&codeshare=true&showDetails=false';
 
-                // FlightRadar24 bounds format: lat1,lat2,lon1,lon2
-                const bounds = `${maxLat},${minLat},${minLon},${maxLon}`;
-                const url = `https://data-live.flightradar24.com/zones/fcgi/feed.js?bounds=${bounds}&faa=1&satellite=1&mlat=1&flarm=1&adsb=1&gnd=0&air=1&vehicles=0&estimated=0&maxage=14400&gliders=0&stats=0`;
+                console.log('Fetching DUS Airport data...');
 
-                console.log('Fetching FlightRadar24 data...');
-                const response = await fetch(url);
+                // Fetch arrivals
+                const arrivalsResponse = await fetch(arrivalUrl, {
+                    method: 'GET',
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    credentials: 'omit'
+                });
 
-                if (!response.ok) {
-                    console.error(`FR24 API error: ${response.status}`);
-                    return {};
-                }
+                if (arrivalsResponse.ok) {
+                    const arrivalsData = await arrivalsResponse.json();
+                    const arrivals = Array.isArray(arrivalsData) ? arrivalsData : (arrivalsData.Flights || arrivalsData.flights || []);
 
-                const data = await response.json();
-                const enrichedFlights = {};
+                    for (const flight of arrivals) {
+                        const callsign = flight.FlightNumber || flight.Callsign || '';
+                        if (!callsign) continue;
 
-                // FR24 returns object with flight IDs as keys
-                for (const [key, value] of Object.entries(data)) {
-                    // Skip metadata entries
-                    if (!Array.isArray(value)) continue;
+                        const cleanCallsign = callsign.trim().replace(/\s+/g, '');
+                        const flightInfo = {
+                            callsign: callsign.trim(),
+                            flightNumber: flight.FlightNumber || callsign.trim(),
+                            origin: flight.Origin || flight.From || '',
+                            destination: 'EDDL',
+                            aircraftType: flight.AircraftType || flight.Aircraft || '',
+                            registration: flight.Registration || '',
+                            airline: flight.Airline || extractAirlineName(callsign.trim(), flight.FlightNumber)
+                        };
 
-                    // FR24 format: [lat, lon, heading, altitude_ft, speed_kts, squawk, radar, aircraft_type,
-                    //               registration, timestamp, origin, destination, flight_number, ?, ?,
-                    //               vertical_rate, callsign, ?]
-                    const [lat, lon, heading, altitude_ft, speed_kts, squawk, radar, aircraft_type,
-                           registration, timestamp, origin, destination, flight_number, _, __,
-                           vertical_rate, callsign] = value;
-
-                    if (!callsign) continue;
-
-                    const cleanCallsign = callsign.trim().replace(/\s+/g, '');
-                    const icao24 = registration ? registration.toLowerCase() : null;
-
-                    // Store by both callsign and ICAO24 for matching
-                    const flightInfo = {
-                        callsign: callsign.trim(),
-                        flightNumber: flight_number || callsign.trim(),
-                        origin: origin || '',
-                        destination: destination || '',
-                        aircraftType: aircraft_type || '',
-                        registration: registration || '',
-                        airline: extractAirlineName(callsign.trim(), flight_number)
-                    };
-
-                    enrichedFlights[cleanCallsign] = flightInfo;
-                    if (callsign.trim() !== cleanCallsign) {
+                        enrichedFlights[cleanCallsign] = flightInfo;
                         enrichedFlights[callsign.trim()] = flightInfo;
                     }
-                    if (icao24) {
-                        enrichedFlights[icao24] = flightInfo;
-                    }
+                    console.log(`Fetched ${arrivals.length} arrivals from DUS Airport`);
                 }
 
-                console.log(`Fetched FR24 data: ${Object.keys(enrichedFlights).length} flights`);
+                // Fetch departures
+                const departuresResponse = await fetch(departureUrl, {
+                    method: 'GET',
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    credentials: 'omit'
+                });
+
+                if (departuresResponse.ok) {
+                    const departuresData = await departuresResponse.json();
+                    const departures = Array.isArray(departuresData) ? departuresData : (departuresData.Flights || departuresData.flights || []);
+
+                    for (const flight of departures) {
+                        const callsign = flight.FlightNumber || flight.Callsign || '';
+                        if (!callsign) continue;
+
+                        const cleanCallsign = callsign.trim().replace(/\s+/g, '');
+                        const flightInfo = {
+                            callsign: callsign.trim(),
+                            flightNumber: flight.FlightNumber || callsign.trim(),
+                            origin: 'EDDL',
+                            destination: flight.Destination || flight.To || '',
+                            aircraftType: flight.AircraftType || flight.Aircraft || '',
+                            registration: flight.Registration || '',
+                            airline: flight.Airline || extractAirlineName(callsign.trim(), flight.FlightNumber)
+                        };
+
+                        enrichedFlights[cleanCallsign] = flightInfo;
+                        enrichedFlights[callsign.trim()] = flightInfo;
+                    }
+                    console.log(`Fetched ${departures.length} departures from DUS Airport`);
+                }
+
+                console.log(`Total flights in cache: ${Object.keys(enrichedFlights).length / 2}`);
                 return enrichedFlights;
             } catch (error) {
-                console.error('Error fetching FlightRadar24 data:', error);
-                return {};
+                console.error('Error fetching DUS Airport data:', error);
+                return enrichedFlights;
             }
         }
 
@@ -1013,20 +1031,20 @@
                 }
 
                 lastDetailsFetch = now;
-                console.log(`Flight details cache updated: ${Object.keys(flightDetailsCache).length} entries from FlightRadar24`);
+                console.log(`Flight details cache updated: ${Object.keys(flightDetailsCache).length} entries from DUS Airport`);
             }
         }
 
         // Initial load - start with basic flight data
         updateFlights();
 
-        // Fetch FlightRadar24 enriched data immediately
+        // Fetch DUS Airport enriched data immediately
         updateFlightDetailsCache();
 
         // Refresh flights every 15 seconds (reduced to avoid rate limits)
         setInterval(updateFlights, 15000);
 
-        // Refresh flight details every 2 minutes (FlightRadar24 data)
+        // Refresh flight details every 2 minutes (DUS Airport data)
         setInterval(updateFlightDetailsCache, 120000);
     </script>
 </body>
