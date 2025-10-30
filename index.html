@@ -669,8 +669,19 @@
                         dusArrivals = arrivals.map(flight => {
                             const flightNumber = flight.flightNumber || '';
                             const airlineName = flight.airline?.name || '';
+
+                            // Get full city name and country
                             const originCity = flight.destination?.city?.name || flight.destination?.name || '';
+                            const originCountry = flight.destination?.city?.country?.name || '';
                             const originIata = flight.destination?.iataCode || '';
+
+                            // Format: "City, Country" or fallback to IATA if city unknown
+                            let originFull = originCity;
+                            if (originCity && originCountry) {
+                                originFull = `${originCity}, ${originCountry}`;
+                            } else if (!originCity && originIata) {
+                                originFull = originIata;
+                            }
 
                             // Parse times (estimated > actual > scheduled)
                             const timeStr = flight.actualTime || flight.estimatedTime || flight.scheduledTime;
@@ -678,8 +689,8 @@
 
                             return {
                                 flightNumber: flightNumber.trim(),
-                                origin: originCity || originIata,
-                                destination: 'Düsseldorf',
+                                origin: originFull,
+                                destination: 'Düsseldorf, Germany',
                                 airline: airlineName,
                                 time: time,
                                 timeStr: timeStr
@@ -722,8 +733,19 @@
                         dusDepartures = departures.map(flight => {
                             const flightNumber = flight.flightNumber || '';
                             const airlineName = flight.airline?.name || '';
+
+                            // Get full city name and country
                             const destCity = flight.destination?.city?.name || flight.destination?.name || '';
+                            const destCountry = flight.destination?.city?.country?.name || '';
                             const destIata = flight.destination?.iataCode || '';
+
+                            // Format: "City, Country" or fallback to IATA if city unknown
+                            let destFull = destCity;
+                            if (destCity && destCountry) {
+                                destFull = `${destCity}, ${destCountry}`;
+                            } else if (!destCity && destIata) {
+                                destFull = destIata;
+                            }
 
                             // Parse times (estimated > actual > scheduled)
                             const timeStr = flight.actualTime || flight.estimatedTime || flight.scheduledTime;
@@ -731,8 +753,8 @@
 
                             return {
                                 flightNumber: flightNumber.trim(),
-                                origin: 'Düsseldorf',
-                                destination: destCity || destIata,
+                                origin: 'Düsseldorf, Germany',
+                                destination: destFull,
                                 airline: airlineName,
                                 time: time,
                                 timeStr: timeStr
