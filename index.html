@@ -635,20 +635,27 @@
 
                 console.log('Fetching DUS Airport data via CORS proxy...');
 
-                // Use CORS proxy with X-Requested-With header
-                const proxyUrl = 'https://api.allorigins.win/raw?url=';
+                // Try corsproxy.io which should forward headers
+                const proxyUrl = 'https://corsproxy.io/?';
 
                 // Fetch arrivals
                 try {
-                    const arrivalsResponse = await fetch(proxyUrl + encodeURIComponent(arrivalUrl), {
+                    const fullArrivalUrl = proxyUrl + encodeURIComponent(arrivalUrl);
+                    console.log('Fetching arrivals from:', fullArrivalUrl);
+
+                    const arrivalsResponse = await fetch(fullArrivalUrl, {
                         method: 'GET',
                         headers: {
                             'X-Requested-With': 'XMLHttpRequest'
                         }
                     });
 
-                    if (arrivalsResponse.ok) {
-                        const arrivalsData = await arrivalsResponse.json();
+                    console.log('Arrivals response status:', arrivalsResponse.status);
+                    const responseText = await arrivalsResponse.text();
+                    console.log('Arrivals response preview:', responseText.substring(0, 200));
+
+                    if (arrivalsResponse.ok && responseText && !responseText.startsWith('Bad Request')) {
+                        const arrivalsData = JSON.parse(responseText);
                         const arrivals = Array.isArray(arrivalsData) ? arrivalsData : (arrivalsData.Flights || arrivalsData.flights || []);
 
                         for (const flight of arrivals) {
@@ -670,6 +677,8 @@
                             enrichedFlights[callsign.trim()] = flightInfo;
                         }
                         console.log(`Fetched ${arrivals.length} arrivals from DUS Airport`);
+                    } else {
+                        console.log('Arrivals request failed or returned bad data');
                     }
                 } catch (err) {
                     console.error('Error fetching arrivals:', err);
@@ -677,15 +686,22 @@
 
                 // Fetch departures
                 try {
-                    const departuresResponse = await fetch(proxyUrl + encodeURIComponent(departureUrl), {
+                    const fullDepartureUrl = proxyUrl + encodeURIComponent(departureUrl);
+                    console.log('Fetching departures from:', fullDepartureUrl);
+
+                    const departuresResponse = await fetch(fullDepartureUrl, {
                         method: 'GET',
                         headers: {
                             'X-Requested-With': 'XMLHttpRequest'
                         }
                     });
 
-                    if (departuresResponse.ok) {
-                        const departuresData = await departuresResponse.json();
+                    console.log('Departures response status:', departuresResponse.status);
+                    const responseText = await departuresResponse.text();
+                    console.log('Departures response preview:', responseText.substring(0, 200));
+
+                    if (departuresResponse.ok && responseText && !responseText.startsWith('Bad Request')) {
+                        const departuresData = JSON.parse(responseText);
                         const departures = Array.isArray(departuresData) ? departuresData : (departuresData.Flights || departuresData.flights || []);
 
                         for (const flight of departures) {
@@ -707,6 +723,8 @@
                             enrichedFlights[callsign.trim()] = flightInfo;
                         }
                         console.log(`Fetched ${departures.length} departures from DUS Airport`);
+                    } else {
+                        console.log('Departures request failed or returned bad data');
                     }
                 } catch (err) {
                     console.error('Error fetching departures:', err);
