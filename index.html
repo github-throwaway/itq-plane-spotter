@@ -300,7 +300,8 @@
         <div class="footer">
             <div class="last-update" id="last-update">Waiting for data...</div>
             <div style="margin-top: 10px; opacity: 0.7; font-size: 0.9em;">
-                Data updates every 10 seconds | Powered by OpenSky Network
+                Data updates every 10 seconds | Powered by OpenSky Network<br>
+                <span style="font-size: 0.85em;">Flight details (routes, airline) update every 10 min due to API limits</span>
             </div>
         </div>
     </div>
@@ -439,6 +440,12 @@
                     fetch(`https://opensky-network.org/api/flights/arrival?airport=EDDL&begin=${fourHoursAgo}&end=${now}`),
                     fetch(`https://opensky-network.org/api/flights/departure?airport=EDDL&begin=${fourHoursAgo}&end=${now}`)
                 ]);
+
+                // Handle rate limiting
+                if (arrivalsRes.status === 429 || departuresRes.status === 429) {
+                    console.log('OpenSky API rate limit reached. Flight details will be limited to basic info.');
+                    return {};
+                }
 
                 const arrivals = arrivalsRes.ok ? await arrivalsRes.json() : [];
                 const departures = departuresRes.ok ? await departuresRes.json() : [];
@@ -896,8 +903,8 @@
         // Update flight details cache
         async function updateFlightDetailsCache() {
             const now = Date.now();
-            // Only fetch if it's been more than 2 minutes since last fetch
-            if (now - lastDetailsFetch > 120000) {
+            // Only fetch if it's been more than 10 minutes since last fetch
+            if (now - lastDetailsFetch > 600000 || lastDetailsFetch === 0) {
                 const details = await fetchFlightDetails();
 
                 // Merge with existing cache
@@ -905,15 +912,8 @@
                     if (!flightDetailsCache[icao24]) {
                         flightDetailsCache[icao24] = info;
 
-                        // Fetch aircraft metadata for new flights
-                        getAircraftType(icao24).then(metadata => {
-                            if (metadata.type || metadata.operator) {
-                                flightDetailsCache[icao24] = {
-                                    ...flightDetailsCache[icao24],
-                                    ...metadata
-                                };
-                            }
-                        });
+                        // Note: Aircraft metadata API also has rate limits, so we skip it for now
+                        // If you need aircraft types, consider using OpenSky's authenticated API
                     }
                 }
 
@@ -922,15 +922,19 @@
             }
         }
 
-        // Initial load
-        updateFlightDetailsCache(); // Load flight details first
+        // Initial load - start with basic flight data
         updateFlights();
+
+        // Wait 30 seconds before first enriched data fetch to avoid immediate rate limiting
+        setTimeout(() => {
+            updateFlightDetailsCache();
+        }, 30000);
 
         // Refresh flights every 10 seconds
         setInterval(updateFlights, 10000);
 
-        // Refresh flight details every 2 minutes
-        setInterval(updateFlightDetailsCache, 120000);
+        // Refresh flight details every 10 minutes to respect rate limits
+        setInterval(updateFlightDetailsCache, 600000);
     </script>
 </body>
 </html>
