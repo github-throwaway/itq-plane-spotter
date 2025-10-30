@@ -300,7 +300,7 @@
         <div class="footer">
             <div class="last-update" id="last-update">Waiting for data...</div>
             <div style="margin-top: 10px; opacity: 0.7; font-size: 0.9em;">
-                Position data: OpenSky Network (every 15 sec) | Flight details: Düsseldorf Airport via proxy (every 3 min)
+                Position data: OpenSky Network (every 15 sec) | Flight details: FlightRadar24 (every 2 min)
             </div>
         </div>
     </div>
@@ -326,8 +326,8 @@
 
         let lastUpdate = null;
         let lastFlightsData = []; // Cache last successful flight data
-        let flightDetailsCache = {}; // Cache for DUS airport flight details
-        let lastDetailsFetch = 0;
+        let flightDetailsCache = {}; // Cache for enriched flight details
+        let lastDetailsFetch = 0; // Track when we last fetched details
 
         // Calculate distance between two points (Haversine formula)
         function calculateDistance(lat1, lon1, lat2, lon2) {
@@ -429,101 +429,6 @@
             return `${direction} ${Math.abs(fpm).toFixed(0)} ft/min`;
         }
 
-
-        // Fetch detailed flight information from Düsseldorf Airport via CORS proxy
-        async function fetchFlightDetails() {
-            try {
-                const arrivals = await fetchDUSFlights('arrivals');
-                const departures = await fetchDUSFlights('departures');
-
-                const details = {};
-
-                // Process arrivals
-                arrivals.forEach(flight => {
-                    if (flight.FlightNumber || flight.Callsign) {
-                        const callsign = (flight.Callsign || flight.FlightNumber || '').trim().replace(/\s+/g, '');
-                        if (callsign) {
-                            details[callsign] = {
-                                callsign: callsign,
-                                flightNumber: flight.FlightNumber || flight.Callsign,
-                                airline: flight.Airline || flight.AirlineName || '',
-                                aircraftType: flight.AircraftType || flight.Aircraft || '',
-                                origin: flight.Origin || flight.From || flight.DepartureAirport || '',
-                                destination: 'EDDL',
-                                status: 'arriving'
-                            };
-                        }
-                    }
-                });
-
-                // Process departures
-                departures.forEach(flight => {
-                    if (flight.FlightNumber || flight.Callsign) {
-                        const callsign = (flight.Callsign || flight.FlightNumber || '').trim().replace(/\s+/g, '');
-                        if (callsign) {
-                            details[callsign] = {
-                                callsign: callsign,
-                                flightNumber: flight.FlightNumber || flight.Callsign,
-                                airline: flight.Airline || flight.AirlineName || '',
-                                aircraftType: flight.AircraftType || flight.Aircraft || '',
-                                origin: 'EDDL',
-                                destination: flight.Destination || flight.To || flight.ArrivalAirport || '',
-                                status: 'departing'
-                            };
-                        }
-                    }
-                });
-
-                console.log(`Loaded flight details for ${Object.keys(details).length} flights from DUS airport`);
-                return details;
-            } catch (error) {
-                console.error('Error fetching DUS airport flight details:', error);
-                return {};
-            }
-        }
-
-        // Fetch flights from Düsseldorf Airport website using CORS proxy
-        async function fetchDUSFlights(type) {
-            try {
-                const isArrival = type === 'arrivals';
-                const targetUrl = `https://www.dus.com/api/sitecore/flightapi/SearchFlightsWithOutParams?lang=en&arrival=${isArrival}&offset=0&codeshare=true&showDetails=false`;
-
-                // Try multiple CORS proxy services
-                const proxies = [
-                    `https://corsproxy.io/?${encodeURIComponent(targetUrl)}`,
-                    `https://api.allorigins.win/get?url=${encodeURIComponent(targetUrl)}`,
-                    `https://cors-anywhere.herokuapp.com/${targetUrl}`
-                ];
-
-                for (const proxyUrl of proxies) {
-                    try {
-                        const response = await fetch(proxyUrl);
-
-                        if (response.ok) {
-                            let data = await response.json();
-
-                            // Handle different proxy response formats
-                            if (data.contents) {
-                                data = JSON.parse(data.contents);
-                            }
-
-                            const flights = Array.isArray(data) ? data : (data.Flights || data.flights || []);
-                            console.log(`Fetched ${flights.length} ${type} from DUS API via proxy`);
-                            return flights;
-                        }
-                    } catch (err) {
-                        console.log(`Proxy failed: ${proxyUrl}`);
-                        continue;
-                    }
-                }
-
-                console.log(`All proxies failed for ${type}`);
-                return [];
-            } catch (error) {
-                console.error(`Error fetching ${type} from DUS:`, error);
-                return [];
-            }
-        }
 
         // Fetch flights from OpenSky Network API (supports CORS)
         async function fetchFlights() {
@@ -719,6 +624,163 @@
             ctx.fillText('N', centerX, 30);
         }
 
+        // Fetch enriched flight details from FlightRadar24
+        async function fetchFlightDetails() {
+            try {
+                // Get data for our area from FlightRadar24
+                const minLat = DUS_LAT - 0.5;
+                const maxLat = DUS_LAT + 0.5;
+                const minLon = DUS_LON - 0.7;
+                const maxLon = DUS_LON + 0.7;
+
+                // FlightRadar24 bounds format: lat1,lat2,lon1,lon2
+                const bounds = `${maxLat},${minLat},${minLon},${maxLon}`;
+                const url = `https://data-live.flightradar24.com/zones/fcgi/feed.js?bounds=${bounds}&faa=1&satellite=1&mlat=1&flarm=1&adsb=1&gnd=0&air=1&vehicles=0&estimated=0&maxage=14400&gliders=0&stats=0`;
+
+                console.log('Fetching FlightRadar24 data...');
+                const response = await fetch(url);
+
+                if (!response.ok) {
+                    console.error(`FR24 API error: ${response.status}`);
+                    return {};
+                }
+
+                const data = await response.json();
+                const enrichedFlights = {};
+
+                // FR24 returns object with flight IDs as keys
+                for (const [key, value] of Object.entries(data)) {
+                    // Skip metadata entries
+                    if (!Array.isArray(value)) continue;
+
+                    // FR24 format: [lat, lon, heading, altitude_ft, speed_kts, squawk, radar, aircraft_type,
+                    //               registration, timestamp, origin, destination, flight_number, ?, ?,
+                    //               vertical_rate, callsign, ?]
+                    const [lat, lon, heading, altitude_ft, speed_kts, squawk, radar, aircraft_type,
+                           registration, timestamp, origin, destination, flight_number, _, __,
+                           vertical_rate, callsign] = value;
+
+                    if (!callsign) continue;
+
+                    const cleanCallsign = callsign.trim().replace(/\s+/g, '');
+                    const icao24 = registration ? registration.toLowerCase() : null;
+
+                    // Store by both callsign and ICAO24 for matching
+                    const flightInfo = {
+                        callsign: callsign.trim(),
+                        flightNumber: flight_number || callsign.trim(),
+                        origin: origin || '',
+                        destination: destination || '',
+                        aircraftType: aircraft_type || '',
+                        registration: registration || '',
+                        airline: extractAirlineName(callsign.trim(), flight_number)
+                    };
+
+                    enrichedFlights[cleanCallsign] = flightInfo;
+                    if (callsign.trim() !== cleanCallsign) {
+                        enrichedFlights[callsign.trim()] = flightInfo;
+                    }
+                    if (icao24) {
+                        enrichedFlights[icao24] = flightInfo;
+                    }
+                }
+
+                console.log(`Fetched FR24 data: ${Object.keys(enrichedFlights).length} flights`);
+                return enrichedFlights;
+            } catch (error) {
+                console.error('Error fetching FlightRadar24 data:', error);
+                return {};
+            }
+        }
+
+        // Extract airline name from callsign or flight number
+        function extractAirlineName(callsign, flightNumber) {
+            const airlines = {
+                'DLH': 'Lufthansa',
+                'EWG': 'Eurowings',
+                'EW': 'Eurowings',
+                'RYR': 'Ryanair',
+                'FR': 'Ryanair',
+                'EZY': 'easyJet',
+                'U2': 'easyJet',
+                'BAW': 'British Airways',
+                'BA': 'British Airways',
+                'AFR': 'Air France',
+                'AF': 'Air France',
+                'KLM': 'KLM',
+                'AUA': 'Austrian Airlines',
+                'OS': 'Austrian Airlines',
+                'SWR': 'Swiss',
+                'LX': 'Swiss',
+                'TAP': 'TAP Portugal',
+                'TP': 'TAP Portugal',
+                'IBE': 'Iberia',
+                'IB': 'Iberia',
+                'AEE': 'Aegean Airlines',
+                'A3': 'Aegean Airlines',
+                'SAS': 'SAS',
+                'SK': 'SAS',
+                'FIN': 'Finnair',
+                'AY': 'Finnair',
+                'THY': 'Turkish Airlines',
+                'TK': 'Turkish Airlines',
+                'UAE': 'Emirates',
+                'EK': 'Emirates',
+                'ETD': 'Etihad',
+                'EY': 'Etihad',
+                'QTR': 'Qatar Airways',
+                'QR': 'Qatar Airways',
+                'AIC': 'Air India',
+                'AI': 'Air India',
+                'UAL': 'United Airlines',
+                'UA': 'United Airlines',
+                'AAL': 'American Airlines',
+                'AA': 'American Airlines',
+                'DAL': 'Delta Air Lines',
+                'DL': 'Delta Air Lines',
+                'WZZ': 'Wizz Air',
+                'W6': 'Wizz Air',
+                'VLG': 'Vueling',
+                'VY': 'Vueling',
+                'BER': 'Air Berlin',
+                'AB': 'Air Berlin',
+                'EIN': 'Aer Lingus',
+                'EI': 'Aer Lingus',
+                'NAX': 'Norwegian',
+                'DY': 'Norwegian',
+                'SWN': 'Sunwing',
+                'WG': 'Sunwing',
+                'CLH': 'Lufthansa Cargo',
+                'GEC': 'Lufthansa Cargo',
+                'BCS': 'European Air Transport',
+                'QY': 'European Air Transport',
+                'CFG': 'Condor',
+                'DE': 'Condor',
+                'TUI': 'TUI',
+                'X3': 'TUI',
+                'BEE': 'FlyBe',
+                'BE': 'FlyBe',
+                'LOG': 'Loganair',
+                'LM': 'Loganair',
+                'AIB': 'Avanti Air'
+            };
+
+            // Try to match the first 2-3 characters of the callsign
+            const code = callsign.substring(0, 3).toUpperCase();
+            if (airlines[code]) return airlines[code];
+
+            const code2 = callsign.substring(0, 2).toUpperCase();
+            if (airlines[code2]) return airlines[code2];
+
+            // Try from flight number
+            if (flightNumber) {
+                const fnCode = flightNumber.substring(0, 2).toUpperCase();
+                if (airlines[fnCode]) return airlines[fnCode];
+            }
+
+            return '';
+        }
+
         // Display flights
         function displayFlights(flights) {
             const container = document.getElementById('flights-container');
@@ -746,9 +808,13 @@
                 const direction = getDirection(bearing);
                 const status = determineFlightStatus(flight.heading, flight.altitude, flight.verticalRate, distanceToAirport);
 
-                // Try to match with DUS airport data by callsign
+                // Try to match with FR24 data by callsign or ICAO24
                 const callsignClean = flight.callsign.trim().replace(/\s+/g, '');
-                const details = flightDetailsCache[callsignClean] || flightDetailsCache[flight.callsign] || {};
+                const icao24 = flight.registration || flight.id;
+                const details = flightDetailsCache[callsignClean] ||
+                               flightDetailsCache[flight.callsign.trim()] ||
+                               flightDetailsCache[icao24] ||
+                               {};
 
                 return {
                     ...flight,
@@ -937,8 +1003,8 @@
         // Update flight details cache
         async function updateFlightDetailsCache() {
             const now = Date.now();
-            // Only fetch if it's been more than 3 minutes since last fetch
-            if (now - lastDetailsFetch > 180000 || lastDetailsFetch === 0) {
+            // Only fetch if it's been more than 2 minutes since last fetch
+            if (now - lastDetailsFetch > 120000 || lastDetailsFetch === 0) {
                 const details = await fetchFlightDetails();
 
                 // Merge with existing cache - store by callsign for easy lookup
@@ -947,21 +1013,21 @@
                 }
 
                 lastDetailsFetch = now;
-                console.log(`Flight details cache updated: ${Object.keys(flightDetailsCache).length} entries from DUS airport`);
+                console.log(`Flight details cache updated: ${Object.keys(flightDetailsCache).length} entries from FlightRadar24`);
             }
         }
 
         // Initial load - start with basic flight data
         updateFlights();
 
-        // Fetch DUS airport data immediately (via CORS proxy)
+        // Fetch FlightRadar24 enriched data immediately
         updateFlightDetailsCache();
 
         // Refresh flights every 15 seconds (reduced to avoid rate limits)
         setInterval(updateFlights, 15000);
 
-        // Refresh flight details every 3 minutes (DUS airport data)
-        setInterval(updateFlightDetailsCache, 180000);
+        // Refresh flight details every 2 minutes (FlightRadar24 data)
+        setInterval(updateFlightDetailsCache, 120000);
     </script>
 </body>
 </html>
