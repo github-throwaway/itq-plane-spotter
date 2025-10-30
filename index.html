@@ -104,9 +104,6 @@
             border-left: 5px solid #f59e0b;
         }
 
-        .flight-card.passing {
-            border-left: 5px solid #3b82f6;
-        }
 
         .flight-header {
             display: flex;
@@ -138,11 +135,6 @@
 
         .status-badge.departing {
             background: #f59e0b;
-            color: white;
-        }
-
-        .status-badge.passing {
-            background: #3b82f6;
             color: white;
         }
 
@@ -225,6 +217,49 @@
             margin-bottom: 20px;
         }
 
+        .map-container {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+            backdrop-filter: blur(10px);
+        }
+
+        .map-title {
+            text-align: center;
+            font-size: 1.2em;
+            margin-bottom: 15px;
+            font-weight: 600;
+        }
+
+        #viewing-map {
+            width: 100%;
+            height: 400px;
+            border-radius: 10px;
+            background: #ffffff;
+            display: block;
+        }
+
+        .route-info {
+            grid-column: span 2;
+            margin-top: 10px;
+            padding: 15px;
+            background: rgba(30, 60, 114, 0.05);
+            border-radius: 10px;
+        }
+
+        .route-info .detail-value {
+            font-size: 1.3em;
+            color: #1e3c72;
+            margin-top: 5px;
+        }
+
+        .route-arrow {
+            font-size: 1.5em;
+            margin: 0 10px;
+            color: #64748b;
+        }
+
         @media (max-width: 768px) {
             h1 {
                 font-size: 1.8em;
@@ -254,6 +289,11 @@
             <span class="loading">Loading flight data...</span>
         </div>
 
+        <div class="map-container">
+            <div class="map-title">Your Viewing Area (Looking North)</div>
+            <canvas id="viewing-map"></canvas>
+        </div>
+
         <div class="flights-container" id="flights-container">
         </div>
 
@@ -277,7 +317,77 @@
         // Radius in degrees (roughly 50km)
         const SEARCH_RADIUS = 0.5;
 
+        // Viewing angle from office (looking north: 315° to 45° = NW to NE)
+        const VIEW_BEARING_MIN = 315;
+        const VIEW_BEARING_MAX = 45;
+
         let lastUpdate = null;
+        let flightRoutes = {}; // Store flight route information
+
+        // Airport code to city/name mapping
+        const AIRPORT_NAMES = {
+            'EDDL': 'Düsseldorf',
+            'EDDF': 'Frankfurt',
+            'EDDM': 'Munich',
+            'EDDB': 'Berlin Brandenburg',
+            'EDDH': 'Hamburg',
+            'EDDK': 'Cologne/Bonn',
+            'EDDT': 'Berlin Tegel',
+            'EDDW': 'Bremen',
+            'EDDN': 'Nuremberg',
+            'EDDV': 'Hannover',
+            'EDDS': 'Stuttgart',
+            'EDDP': 'Leipzig',
+            'LOWW': 'Vienna',
+            'LSZH': 'Zurich',
+            'LSGG': 'Geneva',
+            'EHAM': 'Amsterdam',
+            'EBBR': 'Brussels',
+            'EGLL': 'London Heathrow',
+            'EGKK': 'London Gatwick',
+            'EGSS': 'London Stansted',
+            'LFPG': 'Paris CDG',
+            'LFPO': 'Paris Orly',
+            'LIRF': 'Rome Fiumicino',
+            'LIMC': 'Milan Malpensa',
+            'LEMD': 'Madrid',
+            'LEBL': 'Barcelona',
+            'LPPT': 'Lisbon',
+            'BIKF': 'Reykjavik',
+            'EKCH': 'Copenhagen',
+            'ENGM': 'Oslo',
+            'ESSA': 'Stockholm Arlanda',
+            'EFHK': 'Helsinki',
+            'EVRA': 'Riga',
+            'EYVI': 'Vilnius',
+            'EPWA': 'Warsaw',
+            'LKPR': 'Prague',
+            'LHBP': 'Budapest',
+            'LROP': 'Bucharest',
+            'LBSF': 'Sofia',
+            'LGAV': 'Athens',
+            'LTFM': 'Istanbul',
+            'OMDB': 'Dubai',
+            'OTHH': 'Doha',
+            'KJFK': 'New York JFK',
+            'KEWR': 'Newark',
+            'KORD': 'Chicago',
+            'KLAX': 'Los Angeles',
+            'KSFO': 'San Francisco',
+            'CYYZ': 'Toronto',
+            'ZBAA': 'Beijing',
+            'ZSPD': 'Shanghai',
+            'RJTT': 'Tokyo Haneda',
+            'VHHH': 'Hong Kong',
+            'WSSS': 'Singapore',
+            'YSSY': 'Sydney'
+        };
+
+        // Get airport name from ICAO code
+        function getAirportName(icao) {
+            if (!icao) return 'Unknown';
+            return AIRPORT_NAMES[icao.toUpperCase()] || icao;
+        }
 
         // Calculate distance between two points (Haversine formula)
         function calculateDistance(lat1, lon1, lat2, lon2) {
@@ -308,32 +418,40 @@
             return directions[index];
         }
 
-        // Determine flight status (arriving, departing, or passing)
-        function determineFlightStatus(lat, lon, altitude, verticalRate, velocity) {
+        // Check if bearing is within viewing angle (looking north)
+        function isInViewingAngle(bearing) {
+            // North view: 315° to 45° (wraps around 0°/360°)
+            if (VIEW_BEARING_MIN > VIEW_BEARING_MAX) {
+                return bearing >= VIEW_BEARING_MIN || bearing <= VIEW_BEARING_MAX;
+            }
+            return bearing >= VIEW_BEARING_MIN && bearing <= VIEW_BEARING_MAX;
+        }
+
+        // Determine flight status (arriving or departing only)
+        function determineFlightStatus(lat, lon, altitude, verticalRate, velocity, icao24) {
             const distanceToAirport = calculateDistance(lat, lon, DUS_LAT, DUS_LON);
 
-            // Within 20km of airport and below 3000m altitude
-            if (distanceToAirport < 20) {
-                if (altitude < 3000) {
-                    // Descending = arriving, ascending = departing
-                    if (verticalRate < -1) {
-                        return 'arriving';
-                    } else if (verticalRate > 1) {
-                        return 'departing';
-                    }
-                }
+            // Check if we have route info for this flight
+            if (flightRoutes[icao24]) {
+                return flightRoutes[icao24].status;
             }
 
-            // If moving slow and low near airport, likely arriving/departing
-            if (distanceToAirport < 10 && altitude < 2000) {
-                if (verticalRate < 0 || velocity < 150) {
+            // Fallback to heuristic: within 30km of airport
+            if (distanceToAirport < 30) {
+                // Descending = arriving, ascending/level = departing
+                if (verticalRate < -0.5) {
                     return 'arriving';
                 } else {
                     return 'departing';
                 }
             }
 
-            return 'passing';
+            // Default: use altitude to guess
+            if (altitude < 3000) {
+                return 'arriving';
+            } else {
+                return 'departing';
+            }
         }
 
         // Format altitude
@@ -357,6 +475,54 @@
             const fpm = rate * 196.85; // m/s to ft/min
             const direction = rate > 0 ? '↑' : '↓';
             return `${direction} ${Math.abs(fpm).toFixed(0)} ft/min`;
+        }
+
+        // Fetch arrival/departure information for Düsseldorf Airport
+        async function fetchFlightRoutes() {
+            try {
+                const now = Math.floor(Date.now() / 1000);
+                const twoHoursAgo = now - 7200;
+                const twoHoursLater = now + 7200;
+
+                // Fetch both arrivals and departures
+                const [arrivalsRes, departuresRes] = await Promise.all([
+                    fetch(`https://opensky-network.org/api/flights/arrival?airport=EDDL&begin=${twoHoursAgo}&end=${now}`),
+                    fetch(`https://opensky-network.org/api/flights/departure?airport=EDDL&begin=${twoHoursAgo}&end=${now}`)
+                ]);
+
+                const arrivals = arrivalsRes.ok ? await arrivalsRes.json() : [];
+                const departures = departuresRes.ok ? await departuresRes.json() : [];
+
+                // Store route information indexed by icao24
+                const routes = {};
+
+                arrivals.forEach(flight => {
+                    if (flight.icao24 && flight.estDepartureAirport) {
+                        routes[flight.icao24] = {
+                            status: 'arriving',
+                            from: flight.estDepartureAirport,
+                            to: 'EDDL',
+                            callsign: flight.callsign ? flight.callsign.trim() : null
+                        };
+                    }
+                });
+
+                departures.forEach(flight => {
+                    if (flight.icao24 && flight.estArrivalAirport) {
+                        routes[flight.icao24] = {
+                            status: 'departing',
+                            from: 'EDDL',
+                            to: flight.estArrivalAirport,
+                            callsign: flight.callsign ? flight.callsign.trim() : null
+                        };
+                    }
+                });
+
+                return routes;
+            } catch (error) {
+                console.error('Error fetching flight routes:', error);
+                return {};
+            }
         }
 
         // Fetch flights from OpenSky Network API
@@ -385,6 +551,125 @@
             }
         }
 
+        // Draw map showing viewing area
+        function drawMap(flights) {
+            const canvas = document.getElementById('viewing-map');
+            const ctx = canvas.getContext('2d');
+            const dpr = window.devicePixelRatio || 1;
+
+            // Set canvas size
+            const rect = canvas.getBoundingClientRect();
+            canvas.width = rect.width * dpr;
+            canvas.height = rect.height * dpr;
+            ctx.scale(dpr, dpr);
+
+            const width = rect.width;
+            const height = rect.height;
+
+            // Clear canvas
+            ctx.fillStyle = '#f0f9ff';
+            ctx.fillRect(0, 0, width, height);
+
+            // Map scale (roughly 30km view)
+            const kmPerPixel = 30 / Math.min(width, height) * 1.5;
+
+            // Center on office
+            const centerX = width / 2;
+            const centerY = height / 2;
+
+            // Draw viewing cone (north-facing)
+            ctx.fillStyle = 'rgba(34, 197, 94, 0.1)';
+            ctx.beginPath();
+            ctx.moveTo(centerX, centerY);
+            const radius = Math.min(width, height) * 0.6;
+            ctx.arc(centerX, centerY, radius, -135 * Math.PI / 180, -45 * Math.PI / 180);
+            ctx.closePath();
+            ctx.fill();
+
+            // Draw viewing cone borders
+            ctx.strokeStyle = 'rgba(34, 197, 94, 0.5)';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(centerX, centerY);
+            ctx.lineTo(centerX - radius * Math.cos(45 * Math.PI / 180), centerY - radius * Math.sin(45 * Math.PI / 180));
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(centerX, centerY);
+            ctx.lineTo(centerX + radius * Math.cos(45 * Math.PI / 180), centerY - radius * Math.sin(45 * Math.PI / 180));
+            ctx.stroke();
+
+            // Draw distance rings
+            ctx.strokeStyle = 'rgba(100, 116, 139, 0.2)';
+            ctx.lineWidth = 1;
+            [10, 20, 30].forEach((km, i) => {
+                const r = km / kmPerPixel;
+                ctx.beginPath();
+                ctx.arc(centerX, centerY, r, 0, 2 * Math.PI);
+                ctx.stroke();
+                ctx.fillStyle = '#64748b';
+                ctx.font = '10px sans-serif';
+                ctx.fillText(km + 'km', centerX + 5, centerY - r + 15);
+            });
+
+            // Draw office location
+            ctx.fillStyle = '#1e3c72';
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, 8, 0, 2 * Math.PI);
+            ctx.fill();
+            ctx.fillStyle = '#1e3c72';
+            ctx.font = 'bold 12px sans-serif';
+            ctx.fillText('ITQ Office', centerX + 12, centerY + 4);
+
+            // Draw airport
+            const airportDist = calculateDistance(OFFICE_LAT, OFFICE_LON, DUS_LAT, DUS_LON);
+            const airportBearing = calculateBearing(OFFICE_LAT, OFFICE_LON, DUS_LAT, DUS_LON);
+            const airportAngle = (airportBearing - 90) * Math.PI / 180;
+            const airportR = airportDist / kmPerPixel;
+            const airportX = centerX + airportR * Math.cos(airportAngle);
+            const airportY = centerY + airportR * Math.sin(airportAngle);
+
+            ctx.fillStyle = '#f59e0b';
+            ctx.beginPath();
+            ctx.arc(airportX, airportY, 6, 0, 2 * Math.PI);
+            ctx.fill();
+            ctx.fillStyle = '#f59e0b';
+            ctx.font = 'bold 11px sans-serif';
+            ctx.fillText('EDDL', airportX + 10, airportY + 4);
+
+            // Draw planes
+            flights.forEach(flight => {
+                const dist = flight.distanceFromOffice;
+                const bearing = flight.bearing;
+                const angle = (bearing - 90) * Math.PI / 180;
+                const r = dist / kmPerPixel;
+                const x = centerX + r * Math.cos(angle);
+                const y = centerY + r * Math.sin(angle);
+
+                // Only draw if within canvas
+                if (x >= 0 && x <= width && y >= 0 && y <= height) {
+                    ctx.fillStyle = flight.status === 'arriving' ? '#22c55e' : '#f59e0b';
+                    ctx.beginPath();
+                    // Draw plane as triangle pointing in heading direction
+                    const headingAngle = (flight.true_track - 90) * Math.PI / 180;
+                    ctx.save();
+                    ctx.translate(x, y);
+                    ctx.rotate(headingAngle);
+                    ctx.moveTo(0, -6);
+                    ctx.lineTo(-4, 4);
+                    ctx.lineTo(4, 4);
+                    ctx.closePath();
+                    ctx.fill();
+                    ctx.restore();
+                }
+            });
+
+            // Draw compass
+            ctx.fillStyle = '#1e3c72';
+            ctx.font = 'bold 14px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText('N', centerX, 30);
+        }
+
         // Display flights
         function displayFlights(flights) {
             const container = document.getElementById('flights-container');
@@ -393,17 +678,18 @@
                 container.innerHTML = `
                     <div class="no-flights">
                         <div class="plane-icon">🔍</div>
-                        <div>No flights detected in the area</div>
+                        <div>No flights visible in your viewing area</div>
                         <div style="font-size: 0.8em; margin-top: 15px; opacity: 0.7;">
-                            Searching for aircraft near Düsseldorf Airport...
+                            Looking north from ITQ office...
                         </div>
                     </div>
                 `;
-                document.getElementById('status').innerHTML = `<span>No active flights | Monitoring ${flights.length} aircraft</span>`;
+                document.getElementById('status').innerHTML = `<span>No visible flights</span>`;
+                drawMap([]);
                 return;
             }
 
-            // Process and sort flights
+            // Process and filter flights
             const processedFlights = flights.map(flight => {
                 const [icao24, callsign, origin_country, time_position, last_contact,
                        longitude, latitude, baro_altitude, on_ground, velocity,
@@ -412,7 +698,10 @@
                 const distanceFromOffice = calculateDistance(OFFICE_LAT, OFFICE_LON, latitude, longitude);
                 const bearing = calculateBearing(OFFICE_LAT, OFFICE_LON, latitude, longitude);
                 const direction = getDirection(bearing);
-                const status = determineFlightStatus(latitude, longitude, baro_altitude, vertical_rate, velocity);
+                const status = determineFlightStatus(latitude, longitude, baro_altitude, vertical_rate, velocity, icao24);
+
+                // Get route information
+                const routeInfo = flightRoutes[icao24] || null;
 
                 return {
                     icao24,
@@ -428,9 +717,10 @@
                     distanceFromOffice,
                     bearing,
                     direction,
-                    status
+                    status,
+                    routeInfo
                 };
-            }).filter(f => !f.on_ground); // Only show airborne flights
+            }).filter(f => !f.on_ground && isInViewingAngle(f.bearing)); // Only airborne & visible
 
             // Sort by distance from office (closest first)
             processedFlights.sort((a, b) => a.distanceFromOffice - b.distanceFromOffice);
@@ -438,53 +728,76 @@
             // Count by status
             const arriving = processedFlights.filter(f => f.status === 'arriving').length;
             const departing = processedFlights.filter(f => f.status === 'departing').length;
-            const passing = processedFlights.filter(f => f.status === 'passing').length;
 
             document.getElementById('status').innerHTML = `
-                <strong>Active Flights:</strong>
+                <strong>Visible Flights:</strong>
                 <span style="color: #22c55e;">Arriving: ${arriving}</span> |
-                <span style="color: #f59e0b;">Departing: ${departing}</span> |
-                <span style="color: #3b82f6;">Passing: ${passing}</span>
+                <span style="color: #f59e0b;">Departing: ${departing}</span>
             `;
 
             // Display flights
-            container.innerHTML = processedFlights.map(flight => `
-                <div class="flight-card ${flight.status}">
-                    <div class="flight-header">
-                        <div class="callsign">${flight.callsign}</div>
-                        <div class="status-badge ${flight.status}">${flight.status}</div>
+            container.innerHTML = processedFlights.map(flight => {
+                let routeDisplay = '';
+                if (flight.routeInfo) {
+                    const fromCity = getAirportName(flight.routeInfo.from);
+                    const toCity = getAirportName(flight.routeInfo.to);
+                    routeDisplay = `
+                        <div class="route-info">
+                            <div class="detail-label">${flight.status === 'arriving' ? 'Coming From' : 'Going To'}</div>
+                            <div class="detail-value">
+                                ${fromCity} <span class="route-arrow">→</span> ${toCity}
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    routeDisplay = `
+                        <div class="route-info">
+                            <div class="detail-label">Route</div>
+                            <div class="detail-value" style="font-size: 1.1em;">
+                                ${flight.status === 'arriving' ? 'Arriving at Düsseldorf' : 'Departing from Düsseldorf'}
+                            </div>
+                        </div>
+                    `;
+                }
+
+                return `
+                    <div class="flight-card ${flight.status}">
+                        <div class="flight-header">
+                            <div class="callsign">${flight.callsign}</div>
+                            <div class="status-badge ${flight.status}">${flight.status}</div>
+                        </div>
+                        <div class="flight-details">
+                            <div class="detail-item">
+                                <div class="detail-label">Altitude</div>
+                                <div class="detail-value">${formatAltitude(flight.altitude)}</div>
+                            </div>
+                            <div class="detail-item">
+                                <div class="detail-label">Speed</div>
+                                <div class="detail-value">${formatSpeed(flight.velocity)}</div>
+                            </div>
+                            <div class="detail-item">
+                                <div class="detail-label">Heading</div>
+                                <div class="detail-value">${flight.true_track ? flight.true_track.toFixed(0) + '°' : 'N/A'}</div>
+                            </div>
+                            <div class="detail-item">
+                                <div class="detail-label">Vertical Rate</div>
+                                <div class="detail-value">${formatVerticalRate(flight.vertical_rate)}</div>
+                            </div>
+                            ${routeDisplay}
+                            <div class="distance-info">
+                                <div class="detail-label">From Your Location</div>
+                                <div class="detail-value">${flight.distanceFromOffice.toFixed(1)} km ${flight.direction} (${flight.bearing.toFixed(0)}°)</div>
+                            </div>
+                        </div>
                     </div>
-                    <div class="flight-details">
-                        <div class="detail-item">
-                            <div class="detail-label">Altitude</div>
-                            <div class="detail-value">${formatAltitude(flight.altitude)}</div>
-                        </div>
-                        <div class="detail-item">
-                            <div class="detail-label">Speed</div>
-                            <div class="detail-value">${formatSpeed(flight.velocity)}</div>
-                        </div>
-                        <div class="detail-item">
-                            <div class="detail-label">Heading</div>
-                            <div class="detail-value">${flight.true_track ? flight.true_track.toFixed(0) + '°' : 'N/A'}</div>
-                        </div>
-                        <div class="detail-item">
-                            <div class="detail-label">Vertical Rate</div>
-                            <div class="detail-value">${formatVerticalRate(flight.vertical_rate)}</div>
-                        </div>
-                        <div class="origin-dest">
-                            <div class="detail-label">Origin Country</div>
-                            <div class="detail-value">${flight.origin_country || 'Unknown'}</div>
-                        </div>
-                        <div class="distance-info">
-                            <div class="detail-label">From Your Location</div>
-                            <div class="detail-value">${flight.distanceFromOffice.toFixed(1)} km ${flight.direction} (${flight.bearing.toFixed(0)}°)</div>
-                        </div>
-                    </div>
-                </div>
-            `).join('');
+                `;
+            }).join('');
 
             // Update last update time
             document.getElementById('last-update').textContent = `Last updated: ${lastUpdate.toLocaleTimeString()}`;
+
+            // Draw map with visible flights
+            drawMap(processedFlights);
         }
 
         // Update flights
@@ -493,11 +806,21 @@
             displayFlights(flights);
         }
 
+        // Update flight routes (less frequently)
+        async function updateFlightRoutes() {
+            flightRoutes = await fetchFlightRoutes();
+            console.log('Flight routes updated:', Object.keys(flightRoutes).length);
+        }
+
         // Initial load
+        updateFlightRoutes(); // Load routes first
         updateFlights();
 
-        // Refresh every 30 seconds
+        // Refresh flights every 30 seconds
         setInterval(updateFlights, 30000);
+
+        // Refresh routes every 5 minutes
+        setInterval(updateFlightRoutes, 300000);
     </script>
 </body>
 </html>
