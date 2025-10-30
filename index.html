@@ -300,7 +300,7 @@
         <div class="footer">
             <div class="last-update" id="last-update">Waiting for data...</div>
             <div style="margin-top: 10px; opacity: 0.7; font-size: 0.9em;">
-                Position data: OpenSky Network (every 10 sec) | Flight details: Düsseldorf Airport (every 5 min)
+                Position data: OpenSky Network (every 15 sec) | Flight details: Düsseldorf Airport (every 3 min)
             </div>
         </div>
     </div>
@@ -327,6 +327,7 @@
         let lastUpdate = null;
         let flightDetailsCache = {}; // Cache for flight details (airline, type, route)
         let lastDetailsFetch = 0;
+        let lastFlightsData = []; // Cache last successful flight data
 
         // Calculate distance between two points (Haversine formula)
         function calculateDistance(lat1, lon1, lat2, lon2) {
@@ -485,26 +486,30 @@
         // Fetch flights from Düsseldorf Airport website
         async function fetchDUSFlights(type) {
             try {
-                // Try the public API endpoint that the website uses
-                const url = `https://www.dus.com/api/flights/${type}`;
+                // Use the actual Sitecore API endpoint
+                const isArrival = type === 'arrivals';
+                const url = `https://www.dus.com/api/sitecore/flightapi/SearchFlightsWithOutParams?lang=en&arrival=${isArrival}&offset=0&codeshare=true&showDetails=false`;
 
-                const response = await fetch(url);
+                const response = await fetch(url, {
+                    method: 'GET',
+                    headers: {
+                        'Accept': 'application/json, text/plain, */*',
+                        'Referer': `https://www.dus.com/en/flights/${type}`,
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'Sec-Fetch-Dest': 'empty',
+                        'Sec-Fetch-Mode': 'cors',
+                        'Sec-Fetch-Site': 'same-origin'
+                    },
+                    credentials: 'same-origin'
+                });
+
                 if (response.ok) {
                     const data = await response.json();
                     console.log(`Fetched ${data.length || 0} ${type} from DUS API`);
-                    return Array.isArray(data) ? data : (data.flights || []);
+                    return Array.isArray(data) ? data : (data.Flights || data.flights || []);
                 }
 
-                // If that doesn't work, try using a CORS proxy
-                const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(`https://www.dus.com/en/flights/${type}`)}`;
-                const proxyResponse = await fetch(proxyUrl);
-
-                if (proxyResponse.ok) {
-                    const html = await proxyResponse.text();
-                    return parseDUSFlightsHTML(html);
-                }
-
-                console.log(`Could not fetch ${type} from DUS website`);
+                console.log(`Could not fetch ${type} from DUS website (status: ${response.status})`);
                 return [];
             } catch (error) {
                 console.error(`Error fetching ${type} from DUS:`, error);
@@ -587,12 +592,22 @@
                     }
                 }
 
+                // Cache successful data
+                lastFlightsData = flights;
                 console.log(`Fetched ${flights.length} flights from OpenSky Network`);
                 return flights;
             } catch (error) {
                 console.error('Error fetching flights:', error);
-                document.getElementById('status').innerHTML = `<span style="color: #ff6b6b;">Error loading flight data. Retrying in 10 seconds...</span>`;
-                return [];
+
+                // If we hit rate limits, use cached data
+                if (error.message.includes('429') && lastFlightsData.length > 0) {
+                    console.log('Using cached flight data due to rate limiting');
+                    document.getElementById('status').innerHTML = `<span style="color: #ffa500;">Using cached data (API rate limited)</span>`;
+                    return lastFlightsData;
+                }
+
+                document.getElementById('status').innerHTML = `<span style="color: #ff6b6b;">Error loading flight data. Retrying in 15 seconds...</span>`;
+                return lastFlightsData.length > 0 ? lastFlightsData : [];
             }
         }
 
@@ -961,11 +976,11 @@
         // Fetch DUS airport data immediately (no rate limits)
         updateFlightDetailsCache();
 
-        // Refresh flights every 10 seconds
-        setInterval(updateFlights, 10000);
+        // Refresh flights every 15 seconds (reduced to avoid rate limits)
+        setInterval(updateFlights, 15000);
 
-        // Refresh flight details every 5 minutes (DUS airport data)
-        setInterval(updateFlightDetailsCache, 300000);
+        // Refresh flight details every 3 minutes (DUS airport data)
+        setInterval(updateFlightDetailsCache, 180000);
     </script>
 </body>
 </html>
