@@ -49,9 +49,9 @@ Simply open `index.html` in a web browser. No build process or server required.
 1. Fetches real-time aircraft positions within 50km of Düsseldorf Airport from OpenSky Network (every 15 seconds)
 2. Enriches position data with flight details from official Düsseldorf Airport API (every 2 minutes):
    - Airline name and flight number
-   - Aircraft type and registration
-   - Origin and destination airports
-   - Uses `X-Requested-With: XMLHttpRequest` header for CORS compatibility
+   - Origin and destination cities (full names, not codes)
+   - Scheduled/estimated/actual arrival and departure times
+   - Uses `X-Requested-With: XMLHttpRequest` header via CORS proxy for compatibility
 3. Filters for airborne aircraft only
 4. Checks if aircraft is in north-facing viewing angle (315° to 45°)
 5. Determines if plane is using northeast runway based on:
@@ -59,7 +59,7 @@ Simply open `index.html` in a web browser. No build process or server required.
    - Altitude (below 3500m)
    - Vertical rate (climbing for departures, descending for arrivals)
    - Distance from airport (within 10km)
-6. Matches aircraft by callsign for accurate data correlation
+6. Matches aircraft using **time-based correlation**: finds DUS Airport flights scheduled within ±30 minutes
 7. Sorts by distance from office (closest first)
 8. Displays on interactive map with flight cards showing all details
 
