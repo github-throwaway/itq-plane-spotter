@@ -4,14 +4,15 @@ A real-time flight tracking website for the ITQ office in Düsseldorf, showing a
 
 ## Features
 
-- Real-time flight data from FlightRadar24 API
+- Real-time flight positions from OpenSky Network API
+- Enriched flight details (airline, flight number, aircraft type, routes) from FlightRadar24 API
 - Displays only aircraft using northeast runway (05 departures / 23 arrivals)
 - Filters for planes visible from north-facing office windows
-- Shows origin and destination cities
+- Shows origin and destination airports with airline information
 - Visual map showing viewing area and plane positions
 - Displays altitude, speed, heading, and vertical rate
 - Calculates distance and bearing from office location
-- Auto-refreshes every 10 seconds
+- Position updates every 15 seconds, flight details every 2 minutes
 - Display-friendly UI optimized for office monitors
 - No API key required
 
@@ -34,7 +35,8 @@ The website is hosted on GitHub Pages and updates automatically with real-time f
 ## Technology
 
 - Pure HTML/CSS/JavaScript (no dependencies)
-- FlightRadar24 API for flight data
+- OpenSky Network API for real-time aircraft positions
+- FlightRadar24 API for enriched flight details
 - Canvas-based map visualization
 - Responsive design for desktop and mobile
 
@@ -44,18 +46,23 @@ Simply open `index.html` in a web browser. No build process or server required.
 
 ## How It Works
 
-1. Fetches flight data within 50km of Düsseldorf Airport from FlightRadar24
-2. Filters for airborne aircraft only
-3. Checks if aircraft is in north-facing viewing angle (315° to 45°)
-4. Determines if plane is using northeast runway based on:
-   - Heading (20-80° for departures, 200-260° for arrivals on final approach)
-   - Altitude (below 3000m / 10,000ft)
+1. Fetches real-time aircraft positions within 50km of Düsseldorf Airport from OpenSky Network (every 15 seconds)
+2. Enriches position data with flight details from FlightRadar24 API (every 2 minutes):
+   - Airline name and flight number
+   - Aircraft type and registration
+   - Origin and destination airports
+3. Filters for airborne aircraft only
+4. Checks if aircraft is in north-facing viewing angle (315° to 45°)
+5. Determines if plane is using northeast runway based on:
+   - Heading (10-100° for departures, 190-270° for arrivals)
+   - Altitude (below 3500m)
    - Vertical rate (climbing for departures, descending for arrivals)
-   - Distance from airport (within 25km)
-5. Displays origin/destination cities from FlightRadar24 data
-6. Sorts by distance from office (closest first)
-7. Updates display every 10 seconds
+   - Distance from airport (within 10km)
+6. Matches aircraft by callsign and ICAO24 identifier for accurate data correlation
+7. Sorts by distance from office (closest first)
+8. Displays on interactive map with flight cards showing all details
 
-## Data Source
+## Data Sources
 
-Flight data provided by [FlightRadar24](https://www.flightradar24.com/), the world's most popular flight tracking service.
+- **Position Data**: [OpenSky Network](https://opensky-network.org/) - Free, open-source flight tracking API
+- **Flight Details**: [FlightRadar24](https://www.flightradar24.com/) - The world's most popular flight tracking service, providing airline names, flight numbers, aircraft types, and route information
