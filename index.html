@@ -488,19 +488,36 @@
                 const isArrival = type === 'arrivals';
                 const targetUrl = `https://www.dus.com/api/sitecore/flightapi/SearchFlightsWithOutParams?lang=en&arrival=${isArrival}&offset=0&codeshare=true&showDetails=false`;
 
-                // Use CORS proxy to bypass CORS restrictions
-                const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(targetUrl)}`;
+                // Try multiple CORS proxy services
+                const proxies = [
+                    `https://corsproxy.io/?${encodeURIComponent(targetUrl)}`,
+                    `https://api.allorigins.win/get?url=${encodeURIComponent(targetUrl)}`,
+                    `https://cors-anywhere.herokuapp.com/${targetUrl}`
+                ];
 
-                const response = await fetch(proxyUrl);
+                for (const proxyUrl of proxies) {
+                    try {
+                        const response = await fetch(proxyUrl);
 
-                if (response.ok) {
-                    const data = await response.json();
-                    const flights = Array.isArray(data) ? data : (data.Flights || data.flights || []);
-                    console.log(`Fetched ${flights.length} ${type} from DUS API via proxy`);
-                    return flights;
+                        if (response.ok) {
+                            let data = await response.json();
+
+                            // Handle different proxy response formats
+                            if (data.contents) {
+                                data = JSON.parse(data.contents);
+                            }
+
+                            const flights = Array.isArray(data) ? data : (data.Flights || data.flights || []);
+                            console.log(`Fetched ${flights.length} ${type} from DUS API via proxy`);
+                            return flights;
+                        }
+                    } catch (err) {
+                        console.log(`Proxy failed: ${proxyUrl}`);
+                        continue;
+                    }
                 }
 
-                console.log(`Could not fetch ${type} from DUS website (status: ${response.status})`);
+                console.log(`All proxies failed for ${type}`);
                 return [];
             } catch (error) {
                 console.error(`Error fetching ${type} from DUS:`, error);
