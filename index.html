@@ -308,7 +308,7 @@
     <script>
         // Düsseldorf Airport coordinates
         const DUS_LAT = 51.2895;
-        const DUS_LON = 6.7668;
+        const DUS_LON = 6.7568;  // Adjusted for map display
 
         // Your office coordinates (Wanheimer Str. 43, 40472 Düsseldorf)
         const OFFICE_LAT = 51.2850;  // East of airport, similar latitude
@@ -366,8 +366,8 @@
 
         // Check if plane is using northeast runway operations (visible from office)
         function isUsingNortheastRunway(heading, altitude, verticalRate, distanceToAirport) {
-            // Only consider planes near the airport (within 30km and below 5000m to be safe)
-            if (distanceToAirport > 30 || altitude > 5000) {
+            // Only consider planes near the airport (within 10km and below 5000m)
+            if (distanceToAirport > 10 || altitude > 5000) {
                 return false;
             }
 
@@ -570,7 +570,9 @@
             ctx.fill();
             ctx.fillStyle = '#f59e0b';
             ctx.font = 'bold 11px sans-serif';
-            ctx.fillText('EDDL', airportX + 10, airportY + 4);
+            ctx.textAlign = 'right';
+            ctx.fillText('EDDL', airportX - 10, airportY + 4);
+            ctx.textAlign = 'left'; // Reset for other text
 
             // Draw planes
             flights.forEach(flight => {
@@ -647,7 +649,7 @@
                 const inView = isInViewingAngle(f.bearing);
                 const usingNERunway = isUsingNortheastRunway(f.heading, f.altitude, f.verticalRate, f.distanceToAirport);
 
-                if (f.distanceToAirport < 30) {
+                if (f.distanceToAirport < 15) {
                     console.log(`Flight ${f.callsign}: bearing=${f.bearing.toFixed(0)}° inView=${inView}, heading=${f.heading.toFixed(0)}° alt=${f.altitude.toFixed(0)}m vrate=${f.verticalRate} dist=${f.distanceToAirport.toFixed(1)}km runway=${usingNERunway}`);
                 }
 
