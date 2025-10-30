@@ -503,8 +503,8 @@
             ctx.fillStyle = '#f0f9ff';
             ctx.fillRect(0, 0, width, height);
 
-            // Map scale (roughly 30km view)
-            const kmPerPixel = 30 / Math.min(width, height) * 1.5;
+            // Map scale (10km view)
+            const kmPerPixel = 10 / Math.min(width, height) * 1.2;
 
             // Center on office
             const centerX = width / 2;
@@ -531,10 +531,10 @@
             ctx.lineTo(centerX + radius * Math.cos(45 * Math.PI / 180), centerY - radius * Math.sin(45 * Math.PI / 180));
             ctx.stroke();
 
-            // Draw distance rings
+            // Draw distance rings (only 10km now)
             ctx.strokeStyle = 'rgba(100, 116, 139, 0.2)';
             ctx.lineWidth = 1;
-            [10, 20, 30].forEach((km, i) => {
+            [5, 10].forEach((km, i) => {
                 const r = km / kmPerPixel;
                 ctx.beginPath();
                 ctx.arc(centerX, centerY, r, 0, 2 * Math.PI);
@@ -588,13 +588,15 @@
                     ctx.fillStyle = flight.status === 'arriving' ? '#22c55e' : '#f59e0b';
                     ctx.beginPath();
                     // Draw plane as triangle pointing in heading direction
-                    const headingAngle = (flight.true_track - 90) * Math.PI / 180;
+                    // North = 0°, subtract 90 to rotate because canvas 0° is east
+                    const headingRad = (flight.true_track) * Math.PI / 180;
                     ctx.save();
                     ctx.translate(x, y);
-                    ctx.rotate(headingAngle);
-                    ctx.moveTo(0, -6);
-                    ctx.lineTo(-4, 4);
-                    ctx.lineTo(4, 4);
+                    ctx.rotate(headingRad);
+                    // Triangle points upward (in direction of rotation)
+                    ctx.moveTo(0, -7);      // Nose
+                    ctx.lineTo(-5, 5);       // Left wing
+                    ctx.lineTo(5, 5);        // Right wing
                     ctx.closePath();
                     ctx.fill();
                     ctx.restore();
@@ -714,6 +716,11 @@
                     `;
                 }
 
+                // Format values
+                const speedKts = flight.speed ? (flight.speed * 1.94384).toFixed(0) : 'N/A';
+                const altitudeFt = flight.altitude ? Math.round(flight.altitude * 3.28084) : 'N/A';
+                const distFromAirport = flight.distanceToAirport.toFixed(1);
+
                 return `
                     <div class="flight-card ${flight.status}">
                         <div class="flight-header">
@@ -721,13 +728,17 @@
                             <div class="status-badge ${flight.status}">${flight.status}</div>
                         </div>
                         <div class="flight-details">
+                            <div class="detail-item" style="grid-column: span 2;">
+                                <div class="detail-label">Aircraft Registration</div>
+                                <div class="detail-value">${flight.registration || flight.id}</div>
+                            </div>
                             <div class="detail-item">
                                 <div class="detail-label">Altitude</div>
-                                <div class="detail-value">${formatAltitude(flight.altitude)}</div>
+                                <div class="detail-value">${altitudeFt} ft</div>
                             </div>
                             <div class="detail-item">
                                 <div class="detail-label">Speed</div>
-                                <div class="detail-value">${formatSpeed(flight.velocity)}</div>
+                                <div class="detail-value">${speedKts} kt</div>
                             </div>
                             <div class="detail-item">
                                 <div class="detail-label">Heading</div>
@@ -735,12 +746,17 @@
                             </div>
                             <div class="detail-item">
                                 <div class="detail-label">Vertical Rate</div>
-                                <div class="detail-value">${formatVerticalRate(flight.vertical_rate)}</div>
+                                <div class="detail-value">${formatVerticalRate(flight.verticalRate)}</div>
                             </div>
-                            ${routeDisplay}
+                            <div class="route-info">
+                                <div class="detail-label">${flight.status === 'arriving' ? 'Inbound to' : 'Outbound from'}</div>
+                                <div class="detail-value">Düsseldorf (EDDL)</div>
+                            </div>
                             <div class="distance-info">
-                                <div class="detail-label">From Your Location</div>
-                                <div class="detail-value">${flight.distanceFromOffice.toFixed(1)} km ${flight.direction} (${flight.bearing.toFixed(0)}°)</div>
+                                <div class="detail-label">From Airport / From You</div>
+                                <div class="detail-value">
+                                    ${distFromAirport} km / ${flight.distanceFromOffice.toFixed(1)} km ${flight.direction}
+                                </div>
                             </div>
                         </div>
                     </div>
