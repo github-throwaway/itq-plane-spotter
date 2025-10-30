@@ -300,7 +300,7 @@
         <div class="footer">
             <div class="last-update" id="last-update">Waiting for data...</div>
             <div style="margin-top: 10px; opacity: 0.7; font-size: 0.9em;">
-                Data updates every 30 seconds | Powered by OpenSky Network
+                Data updates every 10 seconds | Powered by FlightRadar24
             </div>
         </div>
     </div>
@@ -314,80 +314,17 @@
         const OFFICE_LAT = 51.2445;
         const OFFICE_LON = 6.7891;
 
-        // Radius in degrees (roughly 50km)
-        const SEARCH_RADIUS = 0.5;
-
         // Viewing angle from office (looking north: 315° to 45° = NW to NE)
         const VIEW_BEARING_MIN = 315;
         const VIEW_BEARING_MAX = 45;
 
+        // Runway orientation (EDDL runways: 05L/23R and 05R/23L)
+        // Runway 05 = northeast departure (heading ~050°)
+        // Runway 23 = southwest landing (approaching from NE, heading ~230° on final)
+        const RUNWAY_NE_HEADING = 50; // Runway 05 departure heading
+        const RUNWAY_SW_HEADING = 230; // Runway 23 approach heading
+
         let lastUpdate = null;
-        let flightRoutes = {}; // Store flight route information
-
-        // Airport code to city/name mapping
-        const AIRPORT_NAMES = {
-            'EDDL': 'Düsseldorf',
-            'EDDF': 'Frankfurt',
-            'EDDM': 'Munich',
-            'EDDB': 'Berlin Brandenburg',
-            'EDDH': 'Hamburg',
-            'EDDK': 'Cologne/Bonn',
-            'EDDT': 'Berlin Tegel',
-            'EDDW': 'Bremen',
-            'EDDN': 'Nuremberg',
-            'EDDV': 'Hannover',
-            'EDDS': 'Stuttgart',
-            'EDDP': 'Leipzig',
-            'LOWW': 'Vienna',
-            'LSZH': 'Zurich',
-            'LSGG': 'Geneva',
-            'EHAM': 'Amsterdam',
-            'EBBR': 'Brussels',
-            'EGLL': 'London Heathrow',
-            'EGKK': 'London Gatwick',
-            'EGSS': 'London Stansted',
-            'LFPG': 'Paris CDG',
-            'LFPO': 'Paris Orly',
-            'LIRF': 'Rome Fiumicino',
-            'LIMC': 'Milan Malpensa',
-            'LEMD': 'Madrid',
-            'LEBL': 'Barcelona',
-            'LPPT': 'Lisbon',
-            'BIKF': 'Reykjavik',
-            'EKCH': 'Copenhagen',
-            'ENGM': 'Oslo',
-            'ESSA': 'Stockholm Arlanda',
-            'EFHK': 'Helsinki',
-            'EVRA': 'Riga',
-            'EYVI': 'Vilnius',
-            'EPWA': 'Warsaw',
-            'LKPR': 'Prague',
-            'LHBP': 'Budapest',
-            'LROP': 'Bucharest',
-            'LBSF': 'Sofia',
-            'LGAV': 'Athens',
-            'LTFM': 'Istanbul',
-            'OMDB': 'Dubai',
-            'OTHH': 'Doha',
-            'KJFK': 'New York JFK',
-            'KEWR': 'Newark',
-            'KORD': 'Chicago',
-            'KLAX': 'Los Angeles',
-            'KSFO': 'San Francisco',
-            'CYYZ': 'Toronto',
-            'ZBAA': 'Beijing',
-            'ZSPD': 'Shanghai',
-            'RJTT': 'Tokyo Haneda',
-            'VHHH': 'Hong Kong',
-            'WSSS': 'Singapore',
-            'YSSY': 'Sydney'
-        };
-
-        // Get airport name from ICAO code
-        function getAirportName(icao) {
-            if (!icao) return 'Unknown';
-            return AIRPORT_NAMES[icao.toUpperCase()] || icao;
-        }
 
         // Calculate distance between two points (Haversine formula)
         function calculateDistance(lat1, lon1, lat2, lon2) {
@@ -427,31 +364,43 @@
             return bearing >= VIEW_BEARING_MIN && bearing <= VIEW_BEARING_MAX;
         }
 
-        // Determine flight status (arriving or departing only)
-        function determineFlightStatus(lat, lon, altitude, verticalRate, velocity, icao24) {
-            const distanceToAirport = calculateDistance(lat, lon, DUS_LAT, DUS_LON);
-
-            // Check if we have route info for this flight
-            if (flightRoutes[icao24]) {
-                return flightRoutes[icao24].status;
+        // Check if plane is using northeast runway operations (visible from office)
+        function isUsingNortheastRunway(heading, altitude, verticalRate, distanceToAirport) {
+            // Only consider planes near the airport (within 25km and below 3000m)
+            if (distanceToAirport > 25 || altitude > 3000) {
+                return false;
             }
 
-            // Fallback to heuristic: within 30km of airport
-            if (distanceToAirport < 30) {
-                // Descending = arriving, ascending/level = departing
-                if (verticalRate < -0.5) {
-                    return 'arriving';
-                } else {
-                    return 'departing';
-                }
-            }
+            // Normalize heading
+            const normalizedHeading = ((heading % 360) + 360) % 360;
 
-            // Default: use altitude to guess
-            if (altitude < 3000) {
+            // Departing on runway 05 (heading northeast: 020-080°)
+            const isDepartingNE = (normalizedHeading >= 20 && normalizedHeading <= 80) &&
+                                  verticalRate >= 0 && altitude < 2000;
+
+            // Arriving on runway 23 (approaching from NE, heading ~200-260° on final approach)
+            const isArrivingFromNE = (normalizedHeading >= 200 && normalizedHeading <= 260) &&
+                                     verticalRate < 0 && altitude < 2000;
+
+            return isDepartingNE || isArrivingFromNE;
+        }
+
+        // Determine flight status based on vertical rate and heading
+        function determineFlightStatus(heading, altitude, verticalRate, distanceToAirport) {
+            const normalizedHeading = ((heading % 360) + 360) % 360;
+
+            // If heading southwest (on approach), it's arriving
+            if (normalizedHeading >= 200 && normalizedHeading <= 260 && verticalRate < 0) {
                 return 'arriving';
-            } else {
+            }
+
+            // If heading northeast (departing), it's departing
+            if (normalizedHeading >= 20 && normalizedHeading <= 80 && verticalRate >= -5) {
                 return 'departing';
             }
+
+            // Fallback: use vertical rate
+            return verticalRate < -2 ? 'arriving' : 'departing';
         }
 
         // Format altitude
@@ -477,63 +426,16 @@
             return `${direction} ${Math.abs(fpm).toFixed(0)} ft/min`;
         }
 
-        // Fetch arrival/departure information for Düsseldorf Airport
-        async function fetchFlightRoutes() {
-            try {
-                const now = Math.floor(Date.now() / 1000);
-                const twoHoursAgo = now - 7200;
-                const twoHoursLater = now + 7200;
-
-                // Fetch both arrivals and departures
-                const [arrivalsRes, departuresRes] = await Promise.all([
-                    fetch(`https://opensky-network.org/api/flights/arrival?airport=EDDL&begin=${twoHoursAgo}&end=${now}`),
-                    fetch(`https://opensky-network.org/api/flights/departure?airport=EDDL&begin=${twoHoursAgo}&end=${now}`)
-                ]);
-
-                const arrivals = arrivalsRes.ok ? await arrivalsRes.json() : [];
-                const departures = departuresRes.ok ? await departuresRes.json() : [];
-
-                // Store route information indexed by icao24
-                const routes = {};
-
-                arrivals.forEach(flight => {
-                    if (flight.icao24 && flight.estDepartureAirport) {
-                        routes[flight.icao24] = {
-                            status: 'arriving',
-                            from: flight.estDepartureAirport,
-                            to: 'EDDL',
-                            callsign: flight.callsign ? flight.callsign.trim() : null
-                        };
-                    }
-                });
-
-                departures.forEach(flight => {
-                    if (flight.icao24 && flight.estArrivalAirport) {
-                        routes[flight.icao24] = {
-                            status: 'departing',
-                            from: 'EDDL',
-                            to: flight.estArrivalAirport,
-                            callsign: flight.callsign ? flight.callsign.trim() : null
-                        };
-                    }
-                });
-
-                return routes;
-            } catch (error) {
-                console.error('Error fetching flight routes:', error);
-                return {};
-            }
-        }
-
-        // Fetch flights from OpenSky Network API
+        // Fetch flights from FlightRadar24 API
         async function fetchFlights() {
             try {
-                const minLat = DUS_LAT - SEARCH_RADIUS;
-                const maxLat = DUS_LAT + SEARCH_RADIUS;
-                const minLon = DUS_LON - SEARCH_RADIUS;
-                const maxLon = DUS_LON + SEARCH_RADIUS;
+                // Define bounding box around Düsseldorf Airport (approximately 50km radius)
+                const north = DUS_LAT + 0.5;
+                const south = DUS_LAT - 0.5;
+                const west = DUS_LON - 0.7;
+                const east = DUS_LON + 0.7;
 
-                const url = `https://opensky-network.org/api/states/all?lamin=${minLat}&lomin=${minLon}&lamax=${maxLat}&lomax=${maxLon}`;
+                const url = `https://data-live.flightradar24.com/zones/fcgi/feed.js?bounds=${north},${south},${west},${east}&faa=1&satellite=1&mlat=1&adsb=1&flarm=1&estimated=1&maxage=14400&gliders=0&stats=0&air=1&gnd=0&vehicles=0`;
 
                 const response = await fetch(url);
                 if (!response.ok) {
@@ -543,7 +445,43 @@
                 const data = await response.json();
                 lastUpdate = new Date();
 
-                return data.states || [];
+                // Convert FlightRadar24 format to our format
+                const flights = [];
+                for (const [key, value] of Object.entries(data)) {
+                    // Skip metadata entries
+                    if (key === 'full_count' || key === 'version' || !Array.isArray(value)) {
+                        continue;
+                    }
+
+                    // FR24 format: [lat, lon, heading, altitude_ft, speed_kt, squawk, radar, type,
+                    //               registration, timestamp, origin, destination, flight, on_ground,
+                    //               vertical_rate, callsign, source]
+                    const [lat, lon, heading, altitudeFt, speedKt, squawk, radar, aircraftType,
+                           registration, timestamp, origin, destination, flight, onGround,
+                           verticalRate, callsign, source] = value;
+
+                    // Skip if on ground
+                    if (onGround === 1) continue;
+
+                    flights.push({
+                        id: key,
+                        latitude: lat,
+                        longitude: lon,
+                        heading: heading,
+                        altitude: altitudeFt * 0.3048, // Convert feet to meters
+                        altitudeFt: altitudeFt,
+                        speed: speedKt * 0.514444, // Convert knots to m/s
+                        speedKt: speedKt,
+                        verticalRate: verticalRate || 0,
+                        callsign: callsign || flight || key,
+                        origin: origin || '',
+                        destination: destination || '',
+                        aircraftType: aircraftType || '',
+                        registration: registration || ''
+                    });
+                }
+
+                return flights;
             } catch (error) {
                 console.error('Error fetching flights:', error);
                 document.getElementById('status').innerHTML = `<span style="color: #ff6b6b;">Error loading flight data. Retrying in 30 seconds...</span>`;
@@ -691,36 +629,26 @@
 
             // Process and filter flights
             const processedFlights = flights.map(flight => {
-                const [icao24, callsign, origin_country, time_position, last_contact,
-                       longitude, latitude, baro_altitude, on_ground, velocity,
-                       true_track, vertical_rate] = flight;
-
-                const distanceFromOffice = calculateDistance(OFFICE_LAT, OFFICE_LON, latitude, longitude);
-                const bearing = calculateBearing(OFFICE_LAT, OFFICE_LON, latitude, longitude);
+                const distanceFromOffice = calculateDistance(OFFICE_LAT, OFFICE_LON, flight.latitude, flight.longitude);
+                const distanceToAirport = calculateDistance(flight.latitude, flight.longitude, DUS_LAT, DUS_LON);
+                const bearing = calculateBearing(OFFICE_LAT, OFFICE_LON, flight.latitude, flight.longitude);
                 const direction = getDirection(bearing);
-                const status = determineFlightStatus(latitude, longitude, baro_altitude, vertical_rate, velocity, icao24);
-
-                // Get route information
-                const routeInfo = flightRoutes[icao24] || null;
+                const status = determineFlightStatus(flight.heading, flight.altitude, flight.verticalRate, distanceToAirport);
 
                 return {
-                    icao24,
-                    callsign: callsign ? callsign.trim() : icao24.toUpperCase(),
-                    origin_country,
-                    latitude,
-                    longitude,
-                    altitude: baro_altitude,
-                    velocity,
-                    true_track,
-                    vertical_rate,
-                    on_ground,
+                    ...flight,
                     distanceFromOffice,
+                    distanceToAirport,
                     bearing,
                     direction,
                     status,
-                    routeInfo
+                    true_track: flight.heading
                 };
-            }).filter(f => !f.on_ground && isInViewingAngle(f.bearing)); // Only airborne & visible
+            }).filter(f => {
+                // Must be in viewing angle AND using northeast runway
+                return isInViewingAngle(f.bearing) &&
+                       isUsingNortheastRunway(f.heading, f.altitude, f.verticalRate, f.distanceToAirport);
+            });
 
             // Sort by distance from office (closest first)
             processedFlights.sort((a, b) => a.distanceFromOffice - b.distanceFromOffice);
@@ -738,14 +666,30 @@
             // Display flights
             container.innerHTML = processedFlights.map(flight => {
                 let routeDisplay = '';
-                if (flight.routeInfo) {
-                    const fromCity = getAirportName(flight.routeInfo.from);
-                    const toCity = getAirportName(flight.routeInfo.to);
+                if (flight.origin && flight.destination) {
                     routeDisplay = `
                         <div class="route-info">
-                            <div class="detail-label">${flight.status === 'arriving' ? 'Coming From' : 'Going To'}</div>
+                            <div class="detail-label">Route</div>
                             <div class="detail-value">
-                                ${fromCity} <span class="route-arrow">→</span> ${toCity}
+                                ${flight.origin} <span class="route-arrow">→</span> ${flight.destination}
+                            </div>
+                        </div>
+                    `;
+                } else if (flight.status === 'arriving' && flight.origin) {
+                    routeDisplay = `
+                        <div class="route-info">
+                            <div class="detail-label">Coming From</div>
+                            <div class="detail-value">
+                                ${flight.origin}
+                            </div>
+                        </div>
+                    `;
+                } else if (flight.status === 'departing' && flight.destination) {
+                    routeDisplay = `
+                        <div class="route-info">
+                            <div class="detail-label">Going To</div>
+                            <div class="detail-value">
+                                ${flight.destination}
                             </div>
                         </div>
                     `;
@@ -806,21 +750,11 @@
             displayFlights(flights);
         }
 
-        // Update flight routes (less frequently)
-        async function updateFlightRoutes() {
-            flightRoutes = await fetchFlightRoutes();
-            console.log('Flight routes updated:', Object.keys(flightRoutes).length);
-        }
-
         // Initial load
-        updateFlightRoutes(); // Load routes first
         updateFlights();
 
-        // Refresh flights every 30 seconds
-        setInterval(updateFlights, 30000);
-
-        // Refresh routes every 5 minutes
-        setInterval(updateFlightRoutes, 300000);
+        // Refresh flights every 10 seconds (FlightRadar24 updates frequently)
+        setInterval(updateFlights, 10000);
     </script>
 </body>
 </html>
