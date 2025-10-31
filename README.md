@@ -48,24 +48,26 @@ Simply open `index.html` in a web browser. No build process or server required.
 
 1. **Fetches ATIS data** from ATIS.guru every 5 minutes:
    - Determines current runway configuration (which runways are in use)
-   - Identifies visible operations (runway 05 departures / runway 23 arrivals from northeast)
+   - Identifies visible operations (runway 05 departures / runway 23 arrivals)
 
-2. **Fetches flight data** from official Düsseldorf Airport API every minute:
-   - All arrivals and departures with full details
+2. **Intelligently fetches only visible flights** from Düsseldorf Airport API every minute:
+   - If arrivals on runway 23 → **fetches arrivals only**
+   - If departures on runway 05 → **fetches departures only**
+   - Skips fetching flights you can't see (50% fewer API calls!)
    - Airline names, flight numbers, aircraft types
    - Origin and destination cities (full names with countries)
-   - Real-time flight status (approaching, landed, taxiing, departing, etc.)
-   - Uses `X-Requested-With: XMLHttpRequest` header via CORS proxy for compatibility
+   - Real-time flight status (approaching, landing, departing, etc.)
+   - Uses `X-Requested-With: XMLHttpRequest` header via CORS proxy
 
-3. **Filters flights** to show only visible aircraft:
-   - **By status**: Only currently active flights (approaching, landing, landed, taxiing, departing, takeoff)
-   - **By runway**: Only operations using northeast runways visible from office
+3. **Filters by status** to show only active flights:
+   - **Arrivals**: Only "approaching" or "landing" (excludes landed)
+   - **Departures**: Only "boarding", "taxiing", "departing", "takeoff"
 
 4. **Displays flights** sorted by scheduled time (soonest first)
 
 5. **Updates** every minute with latest status and runway information
 
-This approach provides **live, accurate data** directly from the airport and automatically adapts to changing runway configurations!
+This optimized approach provides **live, accurate data** directly from the airport, fetches only what you can actually see, and automatically adapts to changing runway configurations!
 
 ## Data Sources
 
