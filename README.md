@@ -5,7 +5,9 @@ A real-time flight tracking website for the ITQ office in Düsseldorf, showing a
 ## Features
 
 - **Live flight data** from official Düsseldorf Airport API (updates every minute)
+- **Automatic runway detection** via ATIS (shows only visible flights from northeast operations)
 - Shows only **currently active flights** (approaching, landing, taxiing, departing)
+- Filters flights based on current runway configuration (05 departures / 23 arrivals visible from office)
 - Displays airline names, flight numbers, and full routes with city names
 - Shows flight status in real-time (landed, taxiing, departing, etc.)
 - Full city names with countries (e.g., "Lyon, France" not "LYS")
@@ -44,24 +46,29 @@ Simply open `index.html` in a web browser. No build process or server required.
 
 ## How It Works
 
-1. Fetches flight data from official Düsseldorf Airport API every minute:
+1. **Fetches ATIS data** from ATIS.guru every 5 minutes:
+   - Determines current runway configuration (which runways are in use)
+   - Identifies visible operations (runway 05 departures / runway 23 arrivals from northeast)
+
+2. **Fetches flight data** from official Düsseldorf Airport API every minute:
    - All arrivals and departures with full details
    - Airline names, flight numbers, aircraft types
    - Origin and destination cities (full names with countries)
    - Real-time flight status (approaching, landed, taxiing, departing, etc.)
    - Uses `X-Requested-With: XMLHttpRequest` header via CORS proxy for compatibility
 
-2. Filters flights by status to show only **currently active** flights:
-   - **Arrivals**: approaching, landing, landed, taxiing
-   - **Departures**: boarding, taxiing, departing, takeoff
+3. **Filters flights** to show only visible aircraft:
+   - **By status**: Only currently active flights (approaching, landing, landed, taxiing, departing, takeoff)
+   - **By runway**: Only operations using northeast runways visible from office
 
-3. Displays flights sorted by scheduled time (soonest first)
+4. **Displays flights** sorted by scheduled time (soonest first)
 
-4. Updates display every minute with latest status information
+5. **Updates** every minute with latest status and runway information
 
-This approach provides **live, accurate data** directly from the airport without relying on third-party tracking services or hitting rate limits.
+This approach provides **live, accurate data** directly from the airport and automatically adapts to changing runway configurations!
 
-## Data Source
+## Data Sources
 
-- **Primary**: [Düsseldorf Airport](https://www.dus.com/) - Official airport API providing real-time flight status, airline names, flight numbers, and full route information for all DUS flights
-- **Supplementary**: [OpenSky Network](https://opensky-network.org/) - Used occasionally for aircraft position data as backup
+- **Flight Data**: [Düsseldorf Airport](https://www.dus.com/) - Official airport API providing real-time flight status, airline names, flight numbers, and full route information
+- **Runway Configuration**: [ATIS.guru](https://atis.guru/) - Live ATIS data for current runway operations
+- **Position Data (backup)**: [OpenSky Network](https://opensky-network.org/) - Used occasionally for aircraft position data as supplement

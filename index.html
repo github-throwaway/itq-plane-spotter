@@ -330,6 +330,8 @@
         let lastDetailsFetch = 0; // Track when we last fetched details
         let dusArrivals = []; // Store DUS arrivals separately for time-based matching
         let dusDepartures = []; // Store DUS departures separately for time-based matching
+        let activeRunways = { arrivals: [], departures: [] }; // Current runway configuration from ATIS
+        let lastATISFetch = 0; // Track when we last fetched ATIS
 
         // Calculate distance between two points (Haversine formula)
         function calculateDistance(lat1, lon1, lat2, lon2) {
@@ -635,6 +637,74 @@
             ctx.fillText('N', centerX, 30);
         }
 
+        // Fetch current runway configuration from ATIS
+        async function fetchATIS() {
+            try {
+                const response = await fetch('https://atis.guru/atis/EDDL');
+                if (!response.ok) {
+                    console.warn('ATIS fetch failed, using default runway config');
+                    return null;
+                }
+
+                const html = await response.text();
+
+                // Parse ATIS to find runway information
+                // ATIS typically mentions "RWY 05L", "LANDING RWY 23R", etc.
+                const runwayInfo = {
+                    arrivals: [],
+                    departures: []
+                };
+
+                // Look for runway mentions
+                const rwy05Match = html.match(/(?:RWY|RUNWAY)\s*(05[LR]?)/i);
+                const rwy23Match = html.match(/(?:RWY|RUNWAY)\s*(23[LR]?)/i);
+                const landingMatch = html.match(/LANDING\s*(?:RWY|RUNWAY)\s*(05[LR]?|23[LR]?)/i);
+                const departingMatch = html.match(/DEPART(?:ING|URE)\s*(?:RWY|RUNWAY)\s*(05[LR]?|23[LR]?)/i);
+
+                // Determine active runways
+                if (landingMatch) {
+                    runwayInfo.arrivals.push(landingMatch[1].toUpperCase());
+                } else if (rwy23Match) {
+                    runwayInfo.arrivals.push('23R'); // Southwest arrivals
+                } else if (rwy05Match) {
+                    runwayInfo.arrivals.push('05L'); // Northeast arrivals
+                }
+
+                if (departingMatch) {
+                    runwayInfo.departures.push(departingMatch[1].toUpperCase());
+                } else if (rwy05Match) {
+                    runwayInfo.departures.push('05L'); // Northeast departures
+                } else if (rwy23Match) {
+                    runwayInfo.departures.push('23R'); // Southwest departures
+                }
+
+                console.log('ATIS runway config:', runwayInfo);
+                return runwayInfo;
+            } catch (error) {
+                console.error('Error fetching ATIS:', error);
+                return null;
+            }
+        }
+
+        // Check if we should show this flight based on runway configuration
+        function isVisibleFromOffice(isArrival) {
+            // Office looks north, so we can only see northeast operations (runway 05 departures, runway 23 arrivals)
+            const runways = isArrival ? activeRunways.arrivals : activeRunways.departures;
+
+            if (runways.length === 0) {
+                // No ATIS data, show all flights
+                return true;
+            }
+
+            if (isArrival) {
+                // Can see arrivals on runway 23 (coming from northeast)
+                return runways.some(rwy => rwy.startsWith('23'));
+            } else {
+                // Can see departures on runway 05 (going northeast)
+                return runways.some(rwy => rwy.startsWith('05'));
+            }
+        }
+
         // Filter flights by status to show only currently active flights
         function isActiveArrival(flight) {
             const status = flight.status?.publicStatus?.name?.toLowerCase() || '';
@@ -937,11 +1007,16 @@
         function displayDUSFlights() {
             const container = document.getElementById('flights-container');
 
-            // Combine active arrivals and departures
-            const allFlights = [
-                ...dusArrivals.map(f => ({...f, flightStatus: 'arriving'})),
-                ...dusDepartures.map(f => ({...f, flightStatus: 'departing'}))
-            ];
+            // Combine active arrivals and departures, filtered by runway visibility
+            const visibleArrivals = isVisibleFromOffice(true)
+                ? dusArrivals.map(f => ({...f, flightStatus: 'arriving'}))
+                : [];
+
+            const visibleDepartures = isVisibleFromOffice(false)
+                ? dusDepartures.map(f => ({...f, flightStatus: 'departing'}))
+                : [];
+
+            const allFlights = [...visibleArrivals, ...visibleDepartures];
 
             if (allFlights.length === 0) {
                 container.innerHTML = `
@@ -963,10 +1038,19 @@
             const arriving = allFlights.filter(f => f.flightStatus === 'arriving').length;
             const departing = allFlights.filter(f => f.flightStatus === 'departing').length;
 
+            // Build runway status text
+            let runwayStatus = '';
+            if (activeRunways.arrivals.length > 0 || activeRunways.departures.length > 0) {
+                const arrRwy = activeRunways.arrivals.join('/') || 'N/A';
+                const depRwy = activeRunways.departures.join('/') || 'N/A';
+                runwayStatus = `<br><span style="font-size: 0.9em; opacity: 0.8;">Runway: Arr ${arrRwy} / Dep ${depRwy}</span>`;
+            }
+
             document.getElementById('status').innerHTML = `
-                <strong>Active Flights:</strong>
+                <strong>Visible Flights:</strong>
                 <span style="color: #22c55e;">Arriving: ${arriving}</span> |
                 <span style="color: #f59e0b;">Departing: ${departing}</span>
+                ${runwayStatus}
             `;
 
             // Display flight cards
@@ -1223,11 +1307,28 @@
             displayFlights(flights);
         }
 
+        // Update ATIS and runway configuration
+        async function updateATIS() {
+            const now = Date.now();
+            // Fetch every 5 minutes (runways don't change often)
+            if (now - lastATISFetch > 300000 || lastATISFetch === 0) {
+                const runwayConfig = await fetchATIS();
+                if (runwayConfig) {
+                    activeRunways = runwayConfig;
+                    lastATISFetch = now;
+                    console.log('Updated runway configuration from ATIS');
+                }
+            }
+        }
+
         // Update flight details cache and display
         async function updateFlightDetailsCache() {
             const now = Date.now();
             // Fetch every minute for live updates
             if (now - lastDetailsFetch > 60000 || lastDetailsFetch === 0) {
+                // Update ATIS first to get current runway config
+                await updateATIS();
+
                 const details = await fetchFlightDetails();
 
                 // Merge with existing cache - store by callsign for easy lookup
