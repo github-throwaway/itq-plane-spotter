@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ITQ Plane Spotter - Düsseldorf Airport</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>✈️</text></svg>">
     <style>
         * {
             margin: 0;
@@ -655,6 +656,7 @@
                         console.log(`Found ${arrivals.length} arrivals in DUS API response`);
                         if (arrivals.length > 0) {
                             console.log('Sample arrival:', JSON.stringify(arrivals[0]));
+                            console.log('Sample arrival aircraft data:', JSON.stringify(arrivals[0].aircraft));
                             // Log all unique statuses to help understand what's available
                             const statuses = [...new Set(arrivals.map(f => f.status?.publicStatus?.name).filter(Boolean))];
                             console.log('Arrival statuses seen:', statuses);
@@ -693,7 +695,7 @@
                             const timeStr = flight.actualTime || flight.estimatedTime || flight.scheduledTime;
                             const time = timeStr ? new Date(timeStr) : null;
 
-                            return {
+                            const result = {
                                 flightNumber: flightNumber.trim(),
                                 origin: originFull,
                                 destination: 'Düsseldorf, Germany',
@@ -703,6 +705,10 @@
                                 timeStr: timeStr,
                                 status: flight.status?.publicStatus?.name || 'unknown'
                             };
+                            if (registration) {
+                                console.log(`Arrival ${flightNumber} has registration: ${registration}`);
+                            }
+                            return result;
                         }).filter(f => f.flightNumber && f.time);
                         console.log(`After filtering: ${dusArrivals.length} active arrivals (from ${arrivals.length} total)`);
                     } else {
@@ -739,6 +745,7 @@
                         console.log(`Found ${departures.length} departures in DUS API response`);
                         if (departures.length > 0) {
                             console.log('Sample departure:', JSON.stringify(departures[0]));
+                            console.log('Sample departure aircraft data:', JSON.stringify(departures[0].aircraft));
                             // Log all unique statuses to help understand what's available
                             const statuses = [...new Set(departures.map(f => f.status?.publicStatus?.name).filter(Boolean))];
                             console.log('Departure statuses seen:', statuses);
@@ -777,7 +784,7 @@
                             const timeStr = flight.actualTime || flight.estimatedTime || flight.scheduledTime;
                             const time = timeStr ? new Date(timeStr) : null;
 
-                            return {
+                            const result = {
                                 flightNumber: flightNumber.trim(),
                                 origin: 'Düsseldorf, Germany',
                                 destination: destFull,
@@ -787,6 +794,10 @@
                                 timeStr: timeStr,
                                 status: flight.status?.publicStatus?.name || 'unknown'
                             };
+                            if (registration) {
+                                console.log(`Departure ${flightNumber} has registration: ${registration}`);
+                            }
+                            return result;
                         }).filter(f => f.flightNumber && f.time);
                         console.log(`After filtering: ${dusDepartures.length} active departures (from ${departures.length} total)`);
                     } else {
@@ -988,7 +999,9 @@
             }).join('');
 
             // Asynchronously fetch and update aircraft photos
-            allFlights.forEach(async (flight) => {
+            console.log(`Attempting to fetch photos for ${allFlights.length} flights`);
+            allFlights.forEach(async (flight, index) => {
+                console.log(`Flight ${index}: ${flight.flightNumber}, registration: ${flight.registration || 'NONE'}`);
                 if (flight.registration) {
                     const photoUrl = await fetchAircraftPhoto(flight.registration);
                     if (photoUrl) {
@@ -998,6 +1011,8 @@
                             photoElement.innerHTML = `<img src="${photoUrl}" alt="${flight.registration}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 6px;" onerror="this.parentElement.innerHTML='✈️'">`;
                         }
                     }
+                } else {
+                    console.log(`No registration for flight ${flight.flightNumber}`);
                 }
             });
 
