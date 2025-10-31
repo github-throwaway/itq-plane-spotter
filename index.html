@@ -712,8 +712,8 @@
             const status = flight.status?.publicStatus?.name?.toLowerCase() || '';
             const statusCode = flight.status?.code || '';
 
-            // Show arrivals that are in approach, landing, or recently landed
-            const activeStatuses = ['approaching', 'landing', 'landed', 'taxiing'];
+            // Show arrivals that are in approach or landing (NOT landed/taxiing)
+            const activeStatuses = ['approaching', 'landing'];
             return activeStatuses.includes(status);
         }
 
