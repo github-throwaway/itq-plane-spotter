@@ -300,7 +300,7 @@
         <div class="footer">
             <div class="last-update" id="last-update">Waiting for data...</div>
             <div style="margin-top: 10px; opacity: 0.7; font-size: 0.9em;">
-                Position data: OpenSky Network (every 30 sec) | Flight details: Düsseldorf Airport (every 2 min)
+                Position data: OpenSky Network (every 2 min) | Flight details: Düsseldorf Airport (every 2 min)
             </div>
         </div>
     </div>
@@ -499,12 +499,12 @@
                         document.getElementById('status').innerHTML = `<span style="color: #ffa500;">⚠️ API Rate Limited - Using cached data (${cacheAge}s old)</span>`;
                         return lastFlightsData;
                     } else {
-                        document.getElementById('status').innerHTML = `<span style="color: #ff6b6b;">⚠️ API Rate Limited - No cached data available. Retrying in 30 seconds...</span>`;
+                        document.getElementById('status').innerHTML = `<span style="color: #ff6b6b;">⚠️ API Rate Limited - No cached data available. Retrying in 2 minutes...</span>`;
                         return [];
                     }
                 }
 
-                document.getElementById('status').innerHTML = `<span style="color: #ff6b6b;">Error loading flight data. Retrying in 30 seconds...</span>`;
+                document.getElementById('status').innerHTML = `<span style="color: #ff6b6b;">Error loading flight data. Retrying in 2 minutes...</span>`;
                 return lastFlightsData.length > 0 ? lastFlightsData : [];
             }
         }
@@ -1138,8 +1138,9 @@
         // Fetch DUS Airport enriched data immediately
         updateFlightDetailsCache();
 
-        // Refresh flights every 30 seconds (reduced to avoid rate limits)
-        setInterval(updateFlights, 30000);
+        // Refresh flights every 2 minutes (OpenSky anonymous limit: 400 requests/day)
+        // 2 min = 720 requests/day, staying under limit with buffer
+        setInterval(updateFlights, 120000);
 
         // Refresh flight details every 2 minutes (DUS Airport data)
         setInterval(updateFlightDetailsCache, 120000);
