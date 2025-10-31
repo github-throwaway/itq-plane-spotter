@@ -726,22 +726,41 @@
             return activeStatuses.includes(status);
         }
 
-        // Fetch enriched flight details from Düsseldorf Airport API via CORS proxy
-        async function fetchFlightDetails() {
-            const enrichedFlights = {};
+        // Determine what type of flights to fetch based on runway config
+        function shouldFetchArrivals() {
+            // If no ATIS data, fetch both
+            if (activeRunways.arrivals.length === 0 && activeRunways.departures.length === 0) {
+                return true;
+            }
+            // Check if arrivals use runway 23 (visible from office)
+            return activeRunways.arrivals.some(rwy => rwy.startsWith('23'));
+        }
 
+        function shouldFetchDepartures() {
+            // If no ATIS data, fetch both
+            if (activeRunways.arrivals.length === 0 && activeRunways.departures.length === 0) {
+                return true;
+            }
+            // Check if departures use runway 05 (visible from office)
+            return activeRunways.departures.some(rwy => rwy.startsWith('05'));
+        }
+
+        // Fetch flights from Düsseldorf Airport (optimized based on runway)
+        async function fetchDUSFlights() {
             try {
                 // DUS Airport API URLs
                 const arrivalUrl = 'https://www.dus.com/api/sitecore/flightapi/SearchFlightsWithOutParams?lang=en&arrival=true&offset=0&codeshare=true&showDetails=false';
                 const departureUrl = 'https://www.dus.com/api/sitecore/flightapi/SearchFlightsWithOutParams?lang=en&arrival=false&offset=0&codeshare=true&showDetails=false';
 
                 console.log('Fetching DUS Airport data via CORS proxy...');
+                console.log('Runway config - Fetch arrivals:', shouldFetchArrivals(), ', Fetch departures:', shouldFetchDepartures());
 
                 // Try corsproxy.io which should forward headers
                 const proxyUrl = 'https://corsproxy.io/?';
 
-                // Fetch arrivals
-                try {
+                // Fetch arrivals only if visible from office
+                if (shouldFetchArrivals()) {
+                  try {
                     const fullArrivalUrl = proxyUrl + encodeURIComponent(arrivalUrl);
                     console.log('Fetching arrivals from:', fullArrivalUrl);
 
@@ -807,12 +826,16 @@
                     } else {
                         console.log('Arrivals request failed or returned bad data');
                     }
-                } catch (err) {
+                  } catch (err) {
                     console.error('Error fetching arrivals:', err);
+                  }
+                } else {
+                    console.log('Skipping arrivals fetch - not visible from office');
                 }
 
-                // Fetch departures
-                try {
+                // Fetch departures only if visible from office
+                if (shouldFetchDepartures()) {
+                  try {
                     const fullDepartureUrl = proxyUrl + encodeURIComponent(departureUrl);
                     console.log('Fetching departures from:', fullDepartureUrl);
 
@@ -878,15 +901,16 @@
                     } else {
                         console.log('Departures request failed or returned bad data');
                     }
-                } catch (err) {
+                  } catch (err) {
                     console.error('Error fetching departures:', err);
+                  }
+                } else {
+                    console.log('Skipping departures fetch - not visible from office');
                 }
 
-                console.log(`Stored ${dusArrivals.length} arrivals and ${dusDepartures.length} departures for time-based matching`);
-                return enrichedFlights;
+                console.log(`Stored ${dusArrivals.length} arrivals and ${dusDepartures.length} departures`);
             } catch (error) {
                 console.error('Error fetching DUS Airport data:', error);
-                return enrichedFlights;
             }
         }
 
@@ -1331,12 +1355,7 @@
                 // Update ATIS first to get current runway config
                 await updateATIS();
 
-                const details = await fetchFlightDetails();
-
-                // Merge with existing cache - store by callsign for easy lookup
-                for (const [callsign, info] of Object.entries(details)) {
-                    flightDetailsCache[callsign] = info;
-                }
+                await fetchDUSFlights();
 
                 lastDetailsFetch = now;
                 console.log(`Flight details updated: ${dusArrivals.length} arrivals, ${dusDepartures.length} departures from DUS Airport`);
