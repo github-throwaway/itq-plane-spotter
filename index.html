@@ -640,7 +640,11 @@
         // Fetch current runway configuration from ATIS
         async function fetchATIS() {
             try {
-                const response = await fetch('https://atis.guru/atis/EDDL');
+                // Use CORS proxy for ATIS.guru
+                const proxyUrl = 'https://corsproxy.io/?';
+                const atisUrl = 'https://atis.guru/atis/EDDL';
+
+                const response = await fetch(proxyUrl + encodeURIComponent(atisUrl));
                 if (!response.ok) {
                     console.warn('ATIS fetch failed, using default runway config');
                     return null;
@@ -649,33 +653,31 @@
                 const html = await response.text();
 
                 // Parse ATIS to find runway information
-                // ATIS typically mentions "RWY 05L", "LANDING RWY 23R", etc.
                 const runwayInfo = {
                     arrivals: [],
                     departures: []
                 };
 
-                // Look for runway mentions
-                const rwy05Match = html.match(/(?:RWY|RUNWAY)\s*(05[LR]?)/i);
-                const rwy23Match = html.match(/(?:RWY|RUNWAY)\s*(23[LR]?)/i);
-                const landingMatch = html.match(/LANDING\s*(?:RWY|RUNWAY)\s*(05[LR]?|23[LR]?)/i);
-                const departingMatch = html.match(/DEPART(?:ING|URE)\s*(?:RWY|RUNWAY)\s*(05[LR]?|23[LR]?)/i);
-
-                // Determine active runways
-                if (landingMatch) {
-                    runwayInfo.arrivals.push(landingMatch[1].toUpperCase());
-                } else if (rwy23Match) {
-                    runwayInfo.arrivals.push('23R'); // Southwest arrivals
-                } else if (rwy05Match) {
-                    runwayInfo.arrivals.push('05L'); // Northeast arrivals
+                // Extract arrival ATIS section
+                const arrivalMatch = html.match(/Arrival ATIS[\s\S]*?<div class="atis">([\s\S]*?)<\/div>/i);
+                if (arrivalMatch) {
+                    const arrivalAtis = arrivalMatch[1];
+                    // Look for RWY mentions in arrival ATIS
+                    const rwyMatch = arrivalAtis.match(/RWY\s*(05[LR]?|23[LR]?)/i);
+                    if (rwyMatch) {
+                        runwayInfo.arrivals.push(rwyMatch[1].toUpperCase());
+                    }
                 }
 
-                if (departingMatch) {
-                    runwayInfo.departures.push(departingMatch[1].toUpperCase());
-                } else if (rwy05Match) {
-                    runwayInfo.departures.push('05L'); // Northeast departures
-                } else if (rwy23Match) {
-                    runwayInfo.departures.push('23R'); // Southwest departures
+                // Extract departure ATIS section
+                const departureMatch = html.match(/Departure ATIS[\s\S]*?<div class="atis">([\s\S]*?)<\/div>/i);
+                if (departureMatch) {
+                    const departureAtis = departureMatch[1];
+                    // Look for RWY mentions in departure ATIS
+                    const rwyMatch = departureAtis.match(/RWY\s*(05[LR]?|23[LR]?)/i);
+                    if (rwyMatch) {
+                        runwayInfo.departures.push(rwyMatch[1].toUpperCase());
+                    }
                 }
 
                 console.log('ATIS runway config:', runwayInfo);
