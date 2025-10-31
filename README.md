@@ -5,14 +5,15 @@ A real-time flight tracking website for the ITQ office in Düsseldorf, showing a
 ## Features
 
 - Real-time flight positions from OpenSky Network API
-- Enriched flight details (airline, flight number, aircraft type, routes) from official Düsseldorf Airport API
+- Enriched flight details (airline, flight number, routes) from official Düsseldorf Airport API
 - Displays only aircraft using northeast runway (05 departures / 23 arrivals)
 - Filters for planes visible from north-facing office windows
-- Shows origin and destination airports with airline information
+- Shows full city names with countries for origin and destination
 - Visual map showing viewing area and plane positions
 - Displays altitude, speed, heading, and vertical rate
 - Calculates distance and bearing from office location
-- Position updates every 15 seconds, flight details every 2 minutes
+- Position updates every 30 seconds, flight details every 2 minutes
+- Smart caching handles API rate limits gracefully
 - Display-friendly UI optimized for office monitors
 - No API key required
 
@@ -46,7 +47,7 @@ Simply open `index.html` in a web browser. No build process or server required.
 
 ## How It Works
 
-1. Fetches real-time aircraft positions within 50km of Düsseldorf Airport from OpenSky Network (every 15 seconds)
+1. Fetches real-time aircraft positions within 50km of Düsseldorf Airport from OpenSky Network (every 30 seconds, with smart caching to handle rate limits)
 2. Enriches position data with flight details from official Düsseldorf Airport API (every 2 minutes):
    - Airline name and flight number
    - Origin and destination cities (full names, not codes)
