@@ -4,19 +4,15 @@ A real-time flight tracking website for the ITQ office in Düsseldorf, showing a
 
 ## Features
 
-- Real-time flight positions from OpenSky Network API
-- Enriched flight details (airline, flight number, routes) from official Düsseldorf Airport API
-- Displays only aircraft using northeast runway (05 departures / 23 arrivals)
-- Filters for planes visible from north-facing office windows
-- Shows full city names with countries for origin and destination
-- Visual map showing viewing area and plane positions
-- Displays altitude, speed, heading, and vertical rate
-- Calculates distance and bearing from office location
-- Position updates every 4 minutes (respects OpenSky's 400 requests/day limit for anonymous users)
-- Flight details update every 2 minutes (from Düsseldorf Airport API)
-- Smart caching handles API rate limits gracefully
+- **Live flight data** from official Düsseldorf Airport API (updates every minute)
+- Shows only **currently active flights** (approaching, landing, taxiing, departing)
+- Displays airline names, flight numbers, and full routes with city names
+- Shows flight status in real-time (landed, taxiing, departing, etc.)
+- Full city names with countries (e.g., "Lyon, France" not "LYS")
+- Sorts flights by scheduled time
 - Display-friendly UI optimized for office monitors
-- No API key required
+- No API key or authentication required
+- Minimal rate limiting (DUS Airport API is very permissive)
 
 ## Office Location
 
@@ -48,24 +44,24 @@ Simply open `index.html` in a web browser. No build process or server required.
 
 ## How It Works
 
-1. Fetches real-time aircraft positions within 50km of Düsseldorf Airport from OpenSky Network (every 4 minutes = 360 requests/day, safely within the 400 requests/day limit for anonymous users)
-2. Enriches position data with flight details from official Düsseldorf Airport API (every 2 minutes):
-   - Airline name and flight number
-   - Origin and destination cities (full names, not codes)
-   - Scheduled/estimated/actual arrival and departure times
+1. Fetches flight data from official Düsseldorf Airport API every minute:
+   - All arrivals and departures with full details
+   - Airline names, flight numbers, aircraft types
+   - Origin and destination cities (full names with countries)
+   - Real-time flight status (approaching, landed, taxiing, departing, etc.)
    - Uses `X-Requested-With: XMLHttpRequest` header via CORS proxy for compatibility
-3. Filters for airborne aircraft only
-4. Checks if aircraft is in north-facing viewing angle (315° to 45°)
-5. Determines if plane is using northeast runway based on:
-   - Heading (10-100° for departures, 190-270° for arrivals)
-   - Altitude (below 3500m)
-   - Vertical rate (climbing for departures, descending for arrivals)
-   - Distance from airport (within 10km)
-6. Matches aircraft using **time-based correlation**: finds DUS Airport flights scheduled within ±30 minutes
-7. Sorts by distance from office (closest first)
-8. Displays on interactive map with flight cards showing all details
 
-## Data Sources
+2. Filters flights by status to show only **currently active** flights:
+   - **Arrivals**: approaching, landing, landed, taxiing
+   - **Departures**: boarding, taxiing, departing, takeoff
 
-- **Position Data**: [OpenSky Network](https://opensky-network.org/) - Free, open-source flight tracking API
-- **Flight Details**: [Düsseldorf Airport](https://www.dus.com/) - Official airport API providing accurate airline names, flight numbers, aircraft types, and route information for all DUS flights
+3. Displays flights sorted by scheduled time (soonest first)
+
+4. Updates display every minute with latest status information
+
+This approach provides **live, accurate data** directly from the airport without relying on third-party tracking services or hitting rate limits.
+
+## Data Source
+
+- **Primary**: [Düsseldorf Airport](https://www.dus.com/) - Official airport API providing real-time flight status, airline names, flight numbers, and full route information for all DUS flights
+- **Supplementary**: [OpenSky Network](https://opensky-network.org/) - Used occasionally for aircraft position data as backup
