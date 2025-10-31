@@ -712,18 +712,20 @@
             const status = flight.status?.publicStatus?.name?.toLowerCase() || '';
             const statusCode = flight.status?.code || '';
 
-            // Show arrivals that are in approach or landing (NOT landed/taxiing)
-            const activeStatuses = ['approaching', 'landing'];
-            return activeStatuses.includes(status);
+            // Exclude only completed/cancelled flights - include everything else
+            // This is more robust than whitelisting specific statuses
+            const excludedStatuses = ['landed', 'cancelled', 'diverted', 'arrived'];
+            return !excludedStatuses.includes(status) && status !== '';
         }
 
         function isActiveDeparture(flight) {
             const status = flight.status?.publicStatus?.name?.toLowerCase() || '';
             const statusCode = flight.status?.code || '';
 
-            // Show departures that are boarding, taxiing, or departing
-            const activeStatuses = ['boarding', 'taxiing', 'departing', 'takeoff'];
-            return activeStatuses.includes(status);
+            // Exclude flights that have already departed or are cancelled
+            // This is more robust than whitelisting specific statuses
+            const excludedStatuses = ['departed', 'airborne', 'cancelled', 'diverted'];
+            return !excludedStatuses.includes(status) && status !== '';
         }
 
         // Determine what type of flights to fetch based on runway config
@@ -788,8 +790,16 @@
                         }
 
                         // Store arrivals for time-based matching - filter for active flights only
+                        console.log(`Before filtering: ${arrivals.length} arrivals`);
                         dusArrivals = arrivals
-                            .filter(isActiveArrival)
+                            .filter(flight => {
+                                const isActive = isActiveArrival(flight);
+                                if (!isActive) {
+                                    const status = flight.status?.publicStatus?.name || 'unknown';
+                                    console.log(`Filtered out arrival ${flight.flightNumber} with status: ${status}`);
+                                }
+                                return isActive;
+                            })
                             .map(flight => {
                             const flightNumber = flight.flightNumber || '';
                             const airlineName = flight.airline?.name || '';
@@ -821,8 +831,7 @@
                                 status: flight.status?.publicStatus?.name || 'unknown'
                             };
                         }).filter(f => f.flightNumber && f.time);
-                        console.log(`Filtered to ${dusArrivals.length} active arrivals`);
-                        console.log(`Fetched ${arrivals.length} arrivals from DUS Airport`);
+                        console.log(`After filtering: ${dusArrivals.length} active arrivals (from ${arrivals.length} total)`);
                     } else {
                         console.log('Arrivals request failed or returned bad data');
                     }
@@ -863,8 +872,16 @@
                         }
 
                         // Store departures for time-based matching - filter for active flights only
+                        console.log(`Before filtering: ${departures.length} departures`);
                         dusDepartures = departures
-                            .filter(isActiveDeparture)
+                            .filter(flight => {
+                                const isActive = isActiveDeparture(flight);
+                                if (!isActive) {
+                                    const status = flight.status?.publicStatus?.name || 'unknown';
+                                    console.log(`Filtered out departure ${flight.flightNumber} with status: ${status}`);
+                                }
+                                return isActive;
+                            })
                             .map(flight => {
                             const flightNumber = flight.flightNumber || '';
                             const airlineName = flight.airline?.name || '';
@@ -896,8 +913,7 @@
                                 status: flight.status?.publicStatus?.name || 'unknown'
                             };
                         }).filter(f => f.flightNumber && f.time);
-                        console.log(`Filtered to ${dusDepartures.length} active departures`);
-                        console.log(`Fetched ${departures.length} departures from DUS Airport`);
+                        console.log(`After filtering: ${dusDepartures.length} active departures (from ${departures.length} total)`);
                     } else {
                         console.log('Departures request failed or returned bad data');
                     }
