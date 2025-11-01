@@ -33,6 +33,16 @@
             background: linear-gradient(135deg, #0066cc 0%, #004c99 100%);
             color: white;
             box-shadow: 0 4px 12px rgba(0, 102, 204, 0.15);
+            position: relative;
+        }
+
+        header::after {
+            content: 'v1.1';
+            position: absolute;
+            top: 10px;
+            right: 15px;
+            font-size: 0.7em;
+            opacity: 0.6;
         }
 
         h1 {
@@ -265,6 +275,11 @@
     </div>
 
     <script>
+        // App version for cache busting
+        console.log('%c ITQ Plane Spotter v1.1 ', 'background: #0066cc; color: white; padding: 4px 8px; border-radius: 3px; font-weight: bold');
+        console.log('✈️ FR24 Feed + Professional Design');
+        console.log('⚠️ If you see CORS errors, press Ctrl+Shift+R (Windows) or Cmd+Shift+R (Mac) to hard refresh');
+
         // Düsseldorf Airport coordinates
         const DUS_LAT = 51.2850;  // Same height as office
         const DUS_LON = 6.7568;
@@ -359,6 +374,8 @@
                 const url = proxyUrl + encodeURIComponent(apiUrl);
 
                 console.log(`Fetching FR24 feed data for bounds: ${bounds}`);
+                console.log(`Using CORS proxy: ${proxyUrl}`);
+                console.log(`Full URL: ${url.substring(0, 100)}...`);
                 const response = await fetch(url);
 
                 if (response.ok) {
