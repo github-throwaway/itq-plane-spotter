@@ -242,32 +242,86 @@
             gap: 8px;
         }
 
-        .flight-meta {
+        .flight-details {
             display: flex;
-            justify-content: space-between;
-            align-items: center;
+            flex-direction: column;
+            gap: 12px;
             padding-top: 16px;
             border-top: 1px solid var(--gray-200);
         }
 
-        .flight-times {
-            display: flex;
-            flex-direction: column;
-            gap: 4px;
-        }
-
-        .time-row {
+        .flight-aircraft {
             font-size: 0.85em;
             color: var(--gray-600);
             font-weight: 500;
         }
 
-        .time-label {
+        .flight-aircraft-type {
+            color: var(--navy-900);
+            font-weight: 600;
+            margin-left: 6px;
+        }
+
+        .flight-airports {
+            display: grid;
+            grid-template-columns: 1fr auto 1fr;
+            gap: 12px;
+            align-items: center;
+            background: var(--gray-50);
+            padding: 12px;
+            border-radius: 8px;
+        }
+
+        .airport-info {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .airport-info.destination {
+            text-align: right;
+        }
+
+        .airport-code {
+            font-size: 1.3em;
+            font-weight: 700;
+            color: var(--navy-900);
+            letter-spacing: -0.3px;
+        }
+
+        .airport-city {
+            font-size: 0.85em;
             color: var(--gray-600);
-            margin-right: 6px;
+            font-weight: 500;
+        }
+
+        .flight-arrow {
+            font-size: 1.5em;
+            color: var(--orange);
+        }
+
+        .flight-times {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+
+        .time-block {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .time-label {
+            font-size: 0.75em;
+            color: var(--gray-600);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-weight: 600;
         }
 
         .time-value {
+            font-size: 0.95em;
             color: var(--navy-900);
             font-weight: 600;
         }
@@ -418,6 +472,16 @@
         .metar-container {
             width: 100%;
             min-height: 435px;
+            overflow-x: auto;
+        }
+
+        .metar-container a {
+            max-width: 100% !important;
+            width: 100% !important;
+        }
+
+        .metar-container iframe {
+            max-width: 100% !important;
         }
 
         @media (max-width: 1400px) {
@@ -455,30 +519,45 @@
             }
 
             .flight-row {
-                padding: 20px;
+                padding: 16px;
             }
 
             .flight-header {
-                gap: 16px;
+                gap: 12px;
             }
 
             .flight-photo {
-                width: 90px;
-                height: 68px;
+                width: 80px;
+                height: 60px;
             }
 
             .flight-number {
-                font-size: 1.4em;
+                font-size: 1.3em;
             }
 
-            .flight-route {
-                font-size: 1em;
+            .flight-airline {
+                font-size: 0.8em;
             }
 
-            .flight-meta {
-                flex-direction: column;
-                align-items: flex-start;
-                gap: 12px;
+            .airport-code {
+                font-size: 1.1em;
+            }
+
+            .airport-city {
+                font-size: 0.75em;
+            }
+
+            .flight-times {
+                grid-template-columns: 1fr 1fr;
+                gap: 8px;
+            }
+
+            .time-label {
+                font-size: 0.65em;
+            }
+
+            .time-value {
+                font-size: 0.85em;
             }
 
             .footer {
@@ -727,6 +806,12 @@
         async function displayFlights() {
             const container = document.getElementById('flights-container');
 
+            // Update timestamp regardless of flight data
+            const now = new Date();
+            const timeStr = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
+            const dateStr = now.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+            document.getElementById('global-last-update').textContent = `${dateStr} at ${timeStr}`;
+
             if (!fr24FlightData || fr24FlightData.length === 0) {
                 container.innerHTML = `
                     <div class="no-flights">
@@ -789,17 +874,33 @@
                     countryFlag = getCountryFlag(country);
                 }
 
-                // Format times
-                let timesHtml = '';
-                if (flight.scheduled_time) {
-                    const scheduled = new Date(flight.scheduled_time * 1000).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
-                    timesHtml += `<div class="time-row"><span class="time-label">Scheduled:</span><span class="time-value">${scheduled}</span></div>`;
+                // Get comprehensive flight details
+                const details = flight.details;
+                const aircraftType = details?.aircraft?.model?.code || flight.aircraft_code || '';
+                const registration = flight.registration || '';
 
-                    if (flight.estimated_time && flight.estimated_time !== flight.scheduled_time) {
-                        const estimated = new Date(flight.estimated_time * 1000).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
-                        timesHtml += `<div class="time-row"><span class="time-label">Expected:</span><span class="time-value">${estimated}</span></div>`;
-                    }
-                }
+                // Origin info
+                const originCode = flight.origin_iata || '';
+                const originCity = flight.origin_city || flight.origin_name || '';
+
+                // Destination info
+                const destCode = flight.destination_iata || '';
+                const destCity = flight.destination_city || flight.destination_name || '';
+
+                // Time formatting
+                const formatTime = (timestamp) => {
+                    if (!timestamp) return '';
+                    return new Date(timestamp * 1000).toLocaleTimeString('en-US', {
+                        hour: 'numeric',
+                        minute: '2-digit',
+                        hour12: true
+                    });
+                };
+
+                const scheduledDep = details?.time?.scheduled?.departure || 0;
+                const actualDep = details?.time?.real?.departure || 0;
+                const scheduledArr = details?.time?.scheduled?.arrival || 0;
+                const estimatedArr = details?.time?.estimated?.arrival || 0;
 
                 const rowId = `flight-${flight.flight_number?.replace(/\s/g, '-') || flight.id}`;
                 const photoId = `${rowId}-photo`;
@@ -811,23 +912,56 @@
                             <div class="flight-info">
                                 <div class="flight-number">${flight.flight_number || flight.callsign || 'Unknown'}</div>
                                 ${flight.airline_name ? `<div class="flight-airline">${flight.airline_name}</div>` : ''}
-                                <div class="flight-route">
-                                    <span>${countryFlag}</span>
-                                    <span>${locationLabel} ${location}</span>
-                                </div>
                             </div>
                         </div>
-                        ${timesHtml ? `
-                            <div class="flight-meta">
-                                <div class="flight-times">${timesHtml}</div>
-                                <div class="status-badge">${flightStatus}</div>
+
+                        <div class="flight-details">
+                            ${aircraftType || registration ? `
+                                <div class="flight-aircraft">
+                                    ${registration ? `${registration}` : ''}
+                                    ${aircraftType ? `<span class="flight-aircraft-type">${aircraftType}</span>` : ''}
+                                </div>
+                            ` : ''}
+
+                            <div class="flight-airports">
+                                <div class="airport-info">
+                                    <div class="airport-code">${originCode}</div>
+                                    <div class="airport-city">${originCity}</div>
+                                </div>
+                                <div class="flight-arrow">→</div>
+                                <div class="airport-info destination">
+                                    <div class="airport-code">${destCode}</div>
+                                    <div class="airport-city">${destCity}</div>
+                                </div>
                             </div>
-                        ` : `
-                            <div class="flight-meta">
-                                <div></div>
-                                <div class="status-badge">${flightStatus}</div>
+
+                            <div class="flight-times">
+                                ${scheduledDep ? `
+                                    <div class="time-block">
+                                        <div class="time-label">Scheduled Dep</div>
+                                        <div class="time-value">${formatTime(scheduledDep)}</div>
+                                    </div>
+                                ` : ''}
+                                ${actualDep ? `
+                                    <div class="time-block">
+                                        <div class="time-label">Actual Dep</div>
+                                        <div class="time-value">${formatTime(actualDep)}</div>
+                                    </div>
+                                ` : ''}
+                                ${scheduledArr ? `
+                                    <div class="time-block">
+                                        <div class="time-label">Scheduled Arr</div>
+                                        <div class="time-value">${formatTime(scheduledArr)}</div>
+                                    </div>
+                                ` : ''}
+                                ${estimatedArr ? `
+                                    <div class="time-block">
+                                        <div class="time-label">Estimated Arr</div>
+                                        <div class="time-value">${formatTime(estimatedArr)}</div>
+                                    </div>
+                                ` : ''}
                             </div>
-                        `}
+                        </div>
                     </div>
                 `;
             }).join('');
@@ -847,11 +981,6 @@
                     }
                 }
             });
-
-            const now = new Date();
-            const timeStr = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
-            const dateStr = now.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-            document.getElementById('global-last-update').textContent = `${dateStr} at ${timeStr}`;
         }
 
         // Update and display flights
