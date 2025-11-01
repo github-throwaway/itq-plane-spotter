@@ -594,18 +594,23 @@
 
         .metar-container:hover,
         .metar-container:hover iframe,
-        .metar-container:hover * {
+        .metar-container:hover *,
+        .metar-container:hover a {
             filter: none !important;
             opacity: 1 !important;
             transform: none !important;
             background: transparent !important;
+            color: inherit !important;
         }
 
         .metar-container *,
-        .metar-container *:hover {
+        .metar-container *:hover,
+        .metar-container a,
+        .metar-container a:hover {
             filter: none !important;
             opacity: 1 !important;
             transition: none !important;
+            background: transparent !important;
         }
 
         @media (max-width: 1600px) {
@@ -776,7 +781,7 @@
             <div class="map-panel">
                 <h2 class="section-title">Live Map</h2>
                 <div class="map-container">
-                    <iframe src="https://www.flightradar24.com/simple_index.php?lat=51.303&lon=6.81&z=14" allowfullscreen></iframe>
+                    <iframe src="https://www.flightradar24.com/simple_index.php?lat=51.305&lon=6.860&z=13" allowfullscreen></iframe>
                     <div class="map-badges-blocker"></div>
                 </div>
             </div>
@@ -1185,6 +1190,9 @@
                 const scheduledArr = details?.time?.scheduled?.arrival || 0;
                 const estimatedArr = details?.time?.estimated?.arrival || 0;
 
+                // Check if flight is in approach status
+                const isApproach = flight.status_text?.toLowerCase().includes('approach') || false;
+
                 const rowId = `flight-${flight.flight_number?.replace(/\s/g, '-') || flight.id}`;
                 const photoId = `${rowId}-photo`;
 
@@ -1238,12 +1246,21 @@
                                             <div class="time-block">
                                                 <div class="time-label">🛬 Arrival</div>
                                                 <div class="time-value-container">
-                                                    ${estimatedArr ? `
-                                                        <div class="time-value">${formatTime(estimatedArr)}</div>
-                                                        ${scheduledArr && scheduledArr !== estimatedArr ? `<div class="time-value crossed-out" style="font-size: 0.85em;">${formatTime(scheduledArr)}</div>` : ''}
-                                                    ` : scheduledArr ? `
-                                                        <div class="time-value">${formatTime(scheduledArr)}</div>
-                                                    ` : ''}
+                                                    ${isApproach ? `
+                                                        ${scheduledArr ? `
+                                                            <div class="time-value">${formatTime(scheduledArr)}</div>
+                                                            ${estimatedArr && scheduledArr !== estimatedArr ? `<div class="time-value crossed-out" style="font-size: 0.85em;">${formatTime(estimatedArr)}</div>` : ''}
+                                                        ` : estimatedArr ? `
+                                                            <div class="time-value">${formatTime(estimatedArr)}</div>
+                                                        ` : ''}
+                                                    ` : `
+                                                        ${estimatedArr ? `
+                                                            <div class="time-value">${formatTime(estimatedArr)}</div>
+                                                            ${scheduledArr && scheduledArr !== estimatedArr ? `<div class="time-value crossed-out" style="font-size: 0.85em;">${formatTime(scheduledArr)}</div>` : ''}
+                                                        ` : scheduledArr ? `
+                                                            <div class="time-value">${formatTime(scheduledArr)}</div>
+                                                        ` : ''}
+                                                    `}
                                                 </div>
                                             </div>
                                         ` : ''}
