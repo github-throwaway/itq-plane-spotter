@@ -304,53 +304,103 @@
             return '';
         }
 
-        // Fetch aircraft registration from FlightRadar24 API
-        async function fetchFlightRadar24Registration(flightNumber) {
-            if (!flightNumber) return null;
+        // Cache for FR24 flight data
+        let fr24FlightData = {};
+        let lastFR24Fetch = 0;
+
+        // Fetch live flights from FlightRadar24 feed.js API (same as ESP32 code)
+        async function fetchFlightRadar24Data() {
             try {
-                // Remove spaces from flight number for FR24 API
-                const cleanFlightNumber = flightNumber.replace(/\s+/g, '').toUpperCase();
+                // Define bounding box around Düsseldorf Airport
+                // DUS is at 51.2895°N, 6.7669°E
+                // Create ~30km box around airport
+                const centerLat = DUS_LAT;
+                const centerLon = DUS_LON;
+                const rangeLat = 0.3; // ~30km north-south
+                const rangeLon = 0.5; // ~30km east-west
 
-                // FR24 search API endpoint
-                const searchUrl = `https://api.flightradar24.com/common/v1/search.json?query=${cleanFlightNumber}&limit=1`;
+                const north = centerLat + rangeLat / 2;
+                const south = centerLat - rangeLat / 2;
+                const west = centerLon - rangeLon / 2;
+                const east = centerLon + rangeLon / 2;
 
-                console.log(`Searching FlightRadar24 for ${cleanFlightNumber}`);
-                const response = await fetch(searchUrl);
+                // FR24 feed.js API (same as ESP32 code)
+                const bounds = `${north},${south},${west},${east}`;
+                const url = `https://data-cloud.flightradar24.com/zones/fcgi/feed.js?bounds=${bounds}&faa=1&satellite=1&mlat=1&flarm=1&adsb=1&gnd=1&air=1&vehicles=0&estimated=1&maxage=14400&gliders=0&stats=0`;
+
+                console.log(`Fetching FR24 feed data for bounds: ${bounds}`);
+                const response = await fetch(url);
 
                 if (response.ok) {
                     const data = await response.json();
+                    const flights = {};
 
-                    // Check if we have flight results
-                    if (data.results && data.results.length > 0) {
-                        const flight = data.results[0];
+                    // Parse FR24 data (each key is a flight, value is array)
+                    for (const [key, value] of Object.entries(data)) {
+                        // Skip metadata entries
+                        if (!Array.isArray(value)) continue;
 
-                        // Try to get live flight data if available
-                        if (flight.id) {
-                            const detailUrl = `https://api.flightradar24.com/common/v1/flight/list.json?query=${flight.id}&fetchBy=flight&page=1&limit=1`;
-                            const detailResponse = await fetch(detailUrl);
+                        // Parse array according to FR24 format (from ESP32 code)
+                        const flightInfo = {
+                            icao_address: value[0],      // [0]
+                            latitude: value[1],           // [1]
+                            longitude: value[2],          // [2]
+                            heading: value[3],            // [3]
+                            altitude: value[4],           // [4]
+                            ground_speed: value[5],       // [5]
+                            squawk: value[6],             // [6]
+                            radar: value[7],              // [7]
+                            aircraft_code: value[8],      // [8]
+                            registration: value[9],       // [9] *** This is what we need! ***
+                            timestamp: value[10],         // [10]
+                            iata_origin: value[11],       // [11]
+                            iata_destination: value[12],  // [12]
+                            flight_number: value[13],     // [13]
+                            on_ground: value[14],         // [14]
+                            vertical_speed: value[15],    // [15]
+                            call_sign: value[16],         // [16]
+                            icao_airline: value[18]       // [18]
+                        };
 
-                            if (detailResponse.ok) {
-                                const detailData = await detailResponse.json();
-                                if (detailData.result && detailData.result.response && detailData.result.response.data) {
-                                    const flightData = detailData.result.response.data[0];
-                                    const registration = flightData?.aircraft?.registration;
-
-                                    if (registration) {
-                                        console.log(`FR24: ${cleanFlightNumber} -> ${registration}`);
-                                        return registration;
-                                    }
-                                }
-                            }
+                        // Store by flight number and call sign for easy lookup
+                        if (flightInfo.flight_number) {
+                            const cleanFlight = flightInfo.flight_number.replace(/\s+/g, '').toUpperCase();
+                            flights[cleanFlight] = flightInfo;
+                        }
+                        if (flightInfo.call_sign) {
+                            const cleanCallsign = flightInfo.call_sign.replace(/\s+/g, '').toUpperCase();
+                            flights[cleanCallsign] = flightInfo;
                         }
                     }
+
+                    console.log(`FR24: Found ${Object.keys(flights).length} flights in area`);
+                    fr24FlightData = flights;
+                    lastFR24Fetch = Date.now();
+                    return true;
                 }
 
-                console.log(`FR24: No registration found for ${cleanFlightNumber}`);
-                return null;
+                console.log('FR24: Failed to fetch feed data');
+                return false;
             } catch (error) {
-                console.error(`Error fetching FR24 data for ${flightNumber}:`, error);
-                return null;
+                console.error('Error fetching FR24 feed:', error);
+                return false;
             }
+        }
+
+        // Get registration from cached FR24 data
+        function getRegistrationFromFR24(flightNumber) {
+            if (!flightNumber) return null;
+
+            const cleanFlight = flightNumber.replace(/\s+/g, '').toUpperCase();
+            const flightInfo = fr24FlightData[cleanFlight];
+
+            if (flightInfo && flightInfo.registration) {
+                console.log(`FR24 cache: ${cleanFlight} -> ${flightInfo.registration}`);
+                return flightInfo.registration;
+            }
+
+            console.log(`FR24 cache: No registration for ${cleanFlight}`);
+            return null;
         }
 
         // Fetch aircraft photo from Planespotters API
@@ -1080,10 +1130,9 @@
 
                 let registration = flight.registration;
 
-                // If no registration from DUS API, try FlightRadar24
+                // If no registration from DUS API, try FlightRadar24 cached data
                 if (!registration) {
-                    console.log(`Trying FlightRadar24 for ${flight.flightNumber}...`);
-                    registration = await fetchFlightRadar24Registration(flight.flightNumber);
+                    registration = getRegistrationFromFR24(flight.flightNumber);
                 }
 
                 if (registration) {
@@ -1125,10 +1174,16 @@
                 // Update ATIS first to get current runway config
                 await updateATIS();
 
+                // Fetch FR24 data to get aircraft registrations (every 2 minutes to reduce load)
+                if (now - lastFR24Fetch > 120000 || lastFR24Fetch === 0) {
+                    await fetchFlightRadar24Data();
+                }
+
                 await fetchDUSFlights();
 
                 lastDetailsFetch = now;
                 console.log(`Flight details updated: ${dusArrivals.length} arrivals, ${dusDepartures.length} departures from DUS Airport`);
+                console.log(`FR24 cache has ${Object.keys(fr24FlightData).length} flight entries`);
 
                 // Display DUS flights directly (no need to wait for OpenSky)
                 displayDUSFlights();
