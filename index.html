@@ -280,33 +280,6 @@
         console.log('✈️ FR24 Feed + Professional Design');
         console.log('⚠️ If you see CORS errors, press Ctrl+Shift+R (Windows) or Cmd+Shift+R (Mac) to hard refresh');
 
-        // Düsseldorf Airport coordinates
-        const DUS_LAT = 51.2850;  // Same height as office
-        const DUS_LON = 6.7568;
-
-        // Your office coordinates (Wanheimer Str. 43, 40472 Düsseldorf)
-        const OFFICE_LAT = 51.2850;  // Same height as airport
-        const OFFICE_LON = 6.7891;
-
-        // Viewing angle from office (looking north: 315° to 45° = NW to NE)
-        const VIEW_BEARING_MIN = 315;
-        const VIEW_BEARING_MAX = 45;
-
-        // Runway orientation (EDDL runways: 05L/23R and 05R/23L)
-        // Runway 05 = northeast departure (heading ~050°)
-        // Runway 23 = southwest landing (approaching from NE, heading ~230° on final)
-        const RUNWAY_NE_HEADING = 50; // Runway 05 departure heading
-        const RUNWAY_SW_HEADING = 230; // Runway 23 approach heading
-
-        let lastUpdate = null;
-        let lastFlightsData = []; // Cache last successful flight data
-        let flightDetailsCache = {}; // Cache for enriched flight details
-        let lastDetailsFetch = 0; // Track when we last fetched details
-        let dusArrivals = []; // Store DUS arrivals separately for time-based matching
-        let dusDepartures = []; // Store DUS departures separately for time-based matching
-        let activeRunways = { arrivals: [], departures: [] }; // Current runway configuration from ATIS
-        let lastATISFetch = 0; // Track when we last fetched ATIS
-
         // Get country flag emoji
         function getCountryFlag(countryName) {
             const countryFlags = {
@@ -346,26 +319,21 @@
         }
 
         // Cache for FR24 flight data
-        let fr24FlightData = {};
+        let fr24FlightData = [];
         let lastFR24Fetch = 0;
 
-        // Fetch live flights from FlightRadar24 feed.js API (same as ESP32 code)
+        // Fetch live flights from FlightRadar24 feed.js API
         async function fetchFlightRadar24Data() {
             try {
-                // Define bounding box around Düsseldorf Airport
-                // DUS is at 51.2895°N, 6.7669°E
-                // Create ~30km box around airport
-                const centerLat = DUS_LAT;
-                const centerLon = DUS_LON;
-                const rangeLat = 0.3; // ~30km north-south
-                const rangeLon = 0.5; // ~30km east-west
+                // User's exact viewing area (northeast office view)
+                // Southwest: 51.289748, 6.782513
+                // Northeast: 51.338119, 6.877785
+                const north = 51.338119;
+                const south = 51.289748;
+                const west = 6.782513;
+                const east = 6.877785;
 
-                const north = centerLat + rangeLat / 2;
-                const south = centerLat - rangeLat / 2;
-                const west = centerLon - rangeLon / 2;
-                const east = centerLon + rangeLon / 2;
-
-                // FR24 feed.js API (same as ESP32 code)
+                // FR24 feed.js API - bounds format: north,south,west,east
                 const bounds = `${north},${south},${west},${east}`;
                 const apiUrl = `https://data-cloud.flightradar24.com/zones/fcgi/feed.js?bounds=${bounds}&faa=1&satellite=1&mlat=1&flarm=1&adsb=1&gnd=1&air=1&vehicles=0&estimated=1&maxage=14400&gliders=0&stats=0`;
 
@@ -373,81 +341,75 @@
                 const proxyUrl = 'https://corsproxy.io/?';
                 const url = proxyUrl + encodeURIComponent(apiUrl);
 
-                console.log(`Fetching FR24 feed data for bounds: ${bounds}`);
+                console.log(`Fetching FR24 feed data for viewing area: ${bounds}`);
                 console.log(`Using CORS proxy: ${proxyUrl}`);
-                console.log(`Full URL: ${url.substring(0, 100)}...`);
                 const response = await fetch(url);
 
                 if (response.ok) {
                     const data = await response.json();
-                    const flights = {};
+                    const flights = [];
 
                     // Parse FR24 data (each key is a flight, value is array)
                     for (const [key, value] of Object.entries(data)) {
-                        // Skip metadata entries
-                        if (!Array.isArray(value)) continue;
+                        // Skip metadata entries (only process numeric keys or flight IDs)
+                        if (!Array.isArray(value) || value.length < 18) continue;
 
-                        // Parse array according to FR24 format (from ESP32 code)
-                        const flightInfo = {
-                            icao_address: value[0],      // [0]
+                        // Parse array according to FR24 format
+                        const flightData = {
+                            id: key,                      // Flight ID for details lookup
+                            icao24: value[0],            // [0] ICAO 24-bit address
                             latitude: value[1],           // [1]
                             longitude: value[2],          // [2]
                             heading: value[3],            // [3]
                             altitude: value[4],           // [4]
                             ground_speed: value[5],       // [5]
                             squawk: value[6],             // [6]
-                            radar: value[7],              // [7]
                             aircraft_code: value[8],      // [8]
-                            registration: value[9],       // [9] *** This is what we need! ***
+                            registration: value[9],       // [9] *** Aircraft registration ***
                             timestamp: value[10],         // [10]
-                            iata_origin: value[11],       // [11]
-                            iata_destination: value[12],  // [12]
-                            flight_number: value[13],     // [13]
+                            origin_iata: value[11],       // [11] Origin airport IATA
+                            destination_iata: value[12],  // [12] Destination airport IATA
+                            flight_number: value[13],     // [13] Flight number
                             on_ground: value[14],         // [14]
                             vertical_speed: value[15],    // [15]
-                            call_sign: value[16],         // [16]
-                            icao_airline: value[18]       // [18]
+                            callsign: value[16],          // [16] Callsign
+                            airline_icao: value[18]       // [18] Airline ICAO
                         };
 
-                        // Store by flight number and call sign for easy lookup
-                        if (flightInfo.flight_number) {
-                            const cleanFlight = flightInfo.flight_number.replace(/\s+/g, '').toUpperCase();
-                            flights[cleanFlight] = flightInfo;
-                        }
-                        if (flightInfo.call_sign) {
-                            const cleanCallsign = flightInfo.call_sign.replace(/\s+/g, '').toUpperCase();
-                            flights[cleanCallsign] = flightInfo;
-                        }
+                        flights.push(flightData);
                     }
 
-                    console.log(`FR24: Found ${Object.keys(flights).length} flights in area`);
+                    console.log(`FR24: Found ${flights.length} flights in viewing area`);
                     fr24FlightData = flights;
                     lastFR24Fetch = Date.now();
-                    return true;
+                    return flights;
                 }
 
                 console.log('FR24: Failed to fetch feed data');
-                return false;
+                return [];
             } catch (error) {
                 console.error('Error fetching FR24 feed:', error);
-                return false;
+                return [];
             }
         }
 
-        // Get registration from cached FR24 data
-        function getRegistrationFromFR24(flightNumber) {
-            if (!flightNumber) return null;
+        // Fetch detailed flight information from FR24 clickhandler API
+        async function fetchFlightDetails(flightId) {
+            try {
+                const apiUrl = `https://data-live.flightradar24.com/clickhandler/?flight=${flightId}`;
+                const proxyUrl = 'https://corsproxy.io/?';
+                const url = proxyUrl + encodeURIComponent(apiUrl);
 
-            const cleanFlight = flightNumber.replace(/\s+/g, '').toUpperCase();
-            const flightInfo = fr24FlightData[cleanFlight];
-
-            if (flightInfo && flightInfo.registration) {
-                console.log(`FR24 cache: ${cleanFlight} -> ${flightInfo.registration}`);
-                return flightInfo.registration;
+                const response = await fetch(url);
+                if (response.ok) {
+                    const data = await response.json();
+                    return data;
+                }
+                return null;
+            } catch (error) {
+                console.error(`Error fetching details for flight ${flightId}:`, error);
+                return null;
             }
-
-            console.log(`FR24 cache: No registration for ${cleanFlight}`);
-            return null;
         }
 
         // Fetch aircraft photo from Planespotters API
@@ -477,771 +439,149 @@
             }
         }
 
-        // Calculate distance between two points (Haversine formula)
-        function calculateDistance(lat1, lon1, lat2, lon2) {
-            const R = 6371; // Earth's radius in km
-            const dLat = (lat2 - lat1) * Math.PI / 180;
-            const dLon = (lon2 - lon1) * Math.PI / 180;
-            const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
-                     Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-                     Math.sin(dLon/2) * Math.sin(dLon/2);
-            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-            return R * c;
-        }
 
-        // Calculate bearing from office to plane
-        function calculateBearing(lat1, lon1, lat2, lon2) {
-            const dLon = (lon2 - lon1) * Math.PI / 180;
-            const y = Math.sin(dLon) * Math.cos(lat2 * Math.PI / 180);
-            const x = Math.cos(lat1 * Math.PI / 180) * Math.sin(lat2 * Math.PI / 180) -
-                     Math.sin(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.cos(dLon);
-            const bearing = Math.atan2(y, x) * 180 / Math.PI;
-            return (bearing + 360) % 360;
-        }
 
-        // Get direction from bearing
-        function getDirection(bearing) {
-            const directions = ['N', 'NNE', 'NE', 'ENE', 'E', 'ESE', 'SE', 'SSE', 'S', 'SSW', 'SW', 'WSW', 'W', 'WNW', 'NW', 'NNW'];
-            const index = Math.round(bearing / 22.5) % 16;
-            return directions[index];
-        }
 
-        // Check if bearing is within viewing angle (looking north)
-        function isInViewingAngle(bearing) {
-            // North view: 315° to 45° (wraps around 0°/360°)
-            if (VIEW_BEARING_MIN > VIEW_BEARING_MAX) {
-                return bearing >= VIEW_BEARING_MIN || bearing <= VIEW_BEARING_MAX;
-            }
-            return bearing >= VIEW_BEARING_MIN && bearing <= VIEW_BEARING_MAX;
-        }
 
-        // Check if plane is using northeast runway operations (visible from office)
-        function isUsingNortheastRunway(heading, altitude, verticalRate, distanceToAirport) {
-            // Only consider planes near the airport (within 10km and below 5000m)
-            if (distanceToAirport > 10 || altitude > 5000) {
-                return false;
-            }
 
-            // Normalize heading
-            const normalizedHeading = ((heading % 360) + 360) % 360;
 
-            // Departing on runway 05 (heading northeast: 010-100° - wider range)
-            const isDepartingNE = (normalizedHeading >= 10 && normalizedHeading <= 100) &&
-                                  verticalRate >= -2 && altitude < 3500;
 
-            // Arriving on runway 23 (approaching from NE, heading ~190-270° - wider range)
-            const isArrivingFromNE = (normalizedHeading >= 190 && normalizedHeading <= 270) &&
-                                     verticalRate <= 2 && altitude < 3500;
 
-            return isDepartingNE || isArrivingFromNE;
-        }
 
-        // Determine flight status based on vertical rate and heading
-        function determineFlightStatus(heading, altitude, verticalRate, distanceToAirport) {
-            const normalizedHeading = ((heading % 360) + 360) % 360;
-
-            // If heading southwest (on approach), it's arriving
-            if (normalizedHeading >= 200 && normalizedHeading <= 260 && verticalRate < 0) {
-                return 'arriving';
-            }
-
-            // If heading northeast (departing), it's departing
-            if (normalizedHeading >= 20 && normalizedHeading <= 80 && verticalRate >= -5) {
-                return 'departing';
-            }
-
-            // Fallback: use vertical rate
-            return verticalRate < -2 ? 'arriving' : 'departing';
-        }
-
-        // Format altitude
-        function formatAltitude(meters) {
-            if (!meters && meters !== 0) return 'N/A';
-            const feet = Math.round(meters * 3.28084);
-            return `${meters.toFixed(0)}m (${feet}ft)`;
-        }
-
-        // Format speed
-        function formatSpeed(metersPerSecond) {
-            if (!metersPerSecond && metersPerSecond !== 0) return 'N/A';
-            const kmh = metersPerSecond * 3.6;
-            const knots = metersPerSecond * 1.94384;
-            return `${kmh.toFixed(0)} km/h (${knots.toFixed(0)} kt)`;
-        }
-
-        // Format vertical rate
-        function formatVerticalRate(rate) {
-            if (!rate && rate !== 0) return 'Level';
-            const fpm = rate * 196.85; // m/s to ft/min
-            const direction = rate > 0 ? '↑' : '↓';
-            return `${direction} ${Math.abs(fpm).toFixed(0)} ft/min`;
-        }
-
-
-        // Fetch flights from OpenSky Network API (supports CORS)
-        async function fetchFlights() {
-            try {
-                const minLat = DUS_LAT - 0.5;
-                const maxLat = DUS_LAT + 0.5;
-                const minLon = DUS_LON - 0.7;
-                const maxLon = DUS_LON + 0.7;
-
-                const url = `https://opensky-network.org/api/states/all?lamin=${minLat}&lomin=${minLon}&lamax=${maxLat}&lomax=${maxLon}`;
-
-                const response = await fetch(url);
-                if (!response.ok) {
-                    if (response.status === 429) {
-                        throw new Error('RATE_LIMIT');
-                    }
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-
-                const data = await response.json();
-                lastUpdate = new Date();
-
-                // Convert OpenSky format to our format
-                const flights = [];
-                if (data.states) {
-                    for (const state of data.states) {
-                        // OpenSky format: [icao24, callsign, origin_country, time_position, last_contact,
-                        //                  longitude, latitude, baro_altitude, on_ground, velocity,
-                        //                  true_track, vertical_rate, sensors, geo_altitude, squawk, sps, position_source]
-                        const [icao24, callsign, origin_country, time_position, last_contact,
-                               longitude, latitude, baro_altitude, on_ground, velocity,
-                               true_track, vertical_rate] = state;
-
-                        // Skip if on ground or missing critical data
-                        if (on_ground || !latitude || !longitude || !true_track) continue;
-
-                        flights.push({
-                            id: icao24,
-                            latitude: latitude,
-                            longitude: longitude,
-                            heading: true_track,
-                            altitude: baro_altitude || 0,
-                            speed: velocity || 0,
-                            verticalRate: vertical_rate || 0,
-                            callsign: callsign ? callsign.trim() : icao24.toUpperCase(),
-                            origin: '',
-                            destination: '',
-                            aircraftType: '',
-                            registration: icao24
-                        });
-                    }
-                }
-
-                // Cache successful data
-                lastFlightsData = flights;
-                console.log(`Fetched ${flights.length} flights from OpenSky Network`);
-                return flights;
-            } catch (error) {
-                console.error('Error fetching flights:', error);
-
-                // If we hit rate limits, use cached data
-                if (error.message.includes('429') || error.message === 'RATE_LIMIT') {
-                    if (lastFlightsData.length > 0) {
-                        console.log('Using cached flight data due to rate limiting');
-                        const cacheAge = Math.round((new Date() - lastUpdate) / 1000);
-                        document.getElementById('status').innerHTML = `<span style="color: #ffa500;">⚠️ API Rate Limited - Using cached data (${cacheAge}s old)</span>`;
-                        return lastFlightsData;
-                    } else {
-                        document.getElementById('status').innerHTML = `<span style="color: #ff6b6b;">⚠️ API Rate Limited - No cached data available. Retrying in 4 minutes...</span>`;
-                        return [];
-                    }
-                }
-
-                document.getElementById('status').innerHTML = `<span style="color: #ff6b6b;">Error loading flight data. Retrying in 4 minutes...</span>`;
-                return lastFlightsData.length > 0 ? lastFlightsData : [];
-            }
-        }
-
-        // Fetch current runway configuration from ATIS
-        async function fetchATIS() {
-            try {
-                // Use CORS proxy for ATIS.guru
-                const proxyUrl = 'https://corsproxy.io/?';
-                const atisUrl = 'https://atis.guru/atis/EDDL';
-
-                const response = await fetch(proxyUrl + encodeURIComponent(atisUrl));
-                if (!response.ok) {
-                    console.warn('ATIS fetch failed, using default runway config');
-                    return null;
-                }
-
-                const html = await response.text();
-
-                // Parse ATIS to find runway information
-                const runwayInfo = {
-                    arrivals: [],
-                    departures: []
-                };
-
-                // Extract arrival ATIS section
-                const arrivalMatch = html.match(/Arrival ATIS[\s\S]*?<div class="atis">([\s\S]*?)<\/div>/i);
-                if (arrivalMatch) {
-                    const arrivalAtis = arrivalMatch[1];
-                    // Look for RWY mentions in arrival ATIS
-                    const rwyMatch = arrivalAtis.match(/RWY\s*(05[LR]?|23[LR]?)/i);
-                    if (rwyMatch) {
-                        runwayInfo.arrivals.push(rwyMatch[1].toUpperCase());
-                    }
-                }
-
-                // Extract departure ATIS section
-                const departureMatch = html.match(/Departure ATIS[\s\S]*?<div class="atis">([\s\S]*?)<\/div>/i);
-                if (departureMatch) {
-                    const departureAtis = departureMatch[1];
-                    // Look for RWY mentions in departure ATIS
-                    const rwyMatch = departureAtis.match(/RWY\s*(05[LR]?|23[LR]?)/i);
-                    if (rwyMatch) {
-                        runwayInfo.departures.push(rwyMatch[1].toUpperCase());
-                    }
-                }
-
-                console.log('ATIS runway config:', runwayInfo);
-                return runwayInfo;
-            } catch (error) {
-                console.error('Error fetching ATIS:', error);
-                return null;
-            }
-        }
-
-        // Check if we should show this flight based on runway configuration
-        function isVisibleFromOffice(isArrival) {
-            // Office looks north, so we can only see northeast operations (runway 05 departures, runway 23 arrivals)
-            const runways = isArrival ? activeRunways.arrivals : activeRunways.departures;
-
-            if (runways.length === 0) {
-                // No ATIS data, show all flights
-                return true;
-            }
-
-            if (isArrival) {
-                // Can see arrivals on runway 23 (coming from northeast)
-                return runways.some(rwy => rwy.startsWith('23'));
-            } else {
-                // Can see departures on runway 05 (going northeast)
-                return runways.some(rwy => rwy.startsWith('05'));
-            }
-        }
-
-        // Filter flights by status to show only currently active flights
-        function isActiveArrival(flight) {
-            const status = flight.status?.publicStatus?.name?.toLowerCase() || '';
-            const statusCode = flight.status?.code || '';
-
-            // Exclude only completed/cancelled flights - include everything else
-            // This is more robust than whitelisting specific statuses
-            const excludedStatuses = ['landed', 'cancelled', 'diverted', 'arrived'];
-            return !excludedStatuses.includes(status) && status !== '';
-        }
-
-        function isActiveDeparture(flight) {
-            const status = flight.status?.publicStatus?.name?.toLowerCase() || '';
-            const statusCode = flight.status?.code || '';
-
-            // Exclude flights that have already departed or are cancelled
-            // This is more robust than whitelisting specific statuses
-            const excludedStatuses = ['departed', 'airborne', 'cancelled', 'diverted'];
-            return !excludedStatuses.includes(status) && status !== '';
-        }
-
-        // Determine what type of flights to fetch based on runway config
-        function shouldFetchArrivals() {
-            // If no ATIS data, fetch both
-            if (activeRunways.arrivals.length === 0 && activeRunways.departures.length === 0) {
-                return true;
-            }
-            // Check if arrivals use runway 23 (visible from office)
-            return activeRunways.arrivals.some(rwy => rwy.startsWith('23'));
-        }
-
-        function shouldFetchDepartures() {
-            // If no ATIS data, fetch both
-            if (activeRunways.arrivals.length === 0 && activeRunways.departures.length === 0) {
-                return true;
-            }
-            // Check if departures use runway 05 (visible from office)
-            return activeRunways.departures.some(rwy => rwy.startsWith('05'));
-        }
-
-        // Fetch flights from Düsseldorf Airport (optimized based on runway)
-        async function fetchDUSFlights() {
-            try {
-                // DUS Airport API URLs
-                const arrivalUrl = 'https://www.dus.com/api/sitecore/flightapi/SearchFlightsWithOutParams?lang=en&arrival=true&offset=0&codeshare=true&showDetails=false';
-                const departureUrl = 'https://www.dus.com/api/sitecore/flightapi/SearchFlightsWithOutParams?lang=en&arrival=false&offset=0&codeshare=true&showDetails=false';
-
-                console.log('Fetching DUS Airport data via CORS proxy...');
-                console.log('Runway config - Fetch arrivals:', shouldFetchArrivals(), ', Fetch departures:', shouldFetchDepartures());
-
-                // Try corsproxy.io which should forward headers
-                const proxyUrl = 'https://corsproxy.io/?';
-
-                // Fetch arrivals only if visible from office
-                if (shouldFetchArrivals()) {
-                  try {
-                    const fullArrivalUrl = proxyUrl + encodeURIComponent(arrivalUrl);
-                    console.log('Fetching arrivals from:', fullArrivalUrl);
-
-                    const arrivalsResponse = await fetch(fullArrivalUrl, {
-                        method: 'GET',
-                        headers: {
-                            'X-Requested-With': 'XMLHttpRequest'
-                        }
-                    });
-
-                    console.log('Arrivals response status:', arrivalsResponse.status);
-                    const responseText = await arrivalsResponse.text();
-                    console.log('Arrivals response preview:', responseText.substring(0, 200));
-
-                    if (arrivalsResponse.ok && responseText && !responseText.startsWith('Bad Request')) {
-                        const arrivalsData = JSON.parse(responseText);
-                        const arrivals = arrivalsData.data?.flights || arrivalsData.Flights || arrivalsData.flights || [];
-
-                        console.log(`Found ${arrivals.length} arrivals in DUS API response`);
-                        if (arrivals.length > 0) {
-                            console.log('Sample arrival:', JSON.stringify(arrivals[0]));
-                            console.log('Sample arrival aircraft data:', JSON.stringify(arrivals[0].aircraft));
-                            // Log all unique statuses to help understand what's available
-                            const statuses = [...new Set(arrivals.map(f => f.status?.publicStatus?.name).filter(Boolean))];
-                            console.log('Arrival statuses seen:', statuses);
-                        }
-
-                        // Store arrivals for time-based matching - filter for active flights only
-                        console.log(`Before filtering: ${arrivals.length} arrivals`);
-                        dusArrivals = arrivals
-                            .filter(flight => {
-                                const isActive = isActiveArrival(flight);
-                                if (!isActive) {
-                                    const status = flight.status?.publicStatus?.name || 'unknown';
-                                    console.log(`Filtered out arrival ${flight.flightNumber} with status: ${status}`);
-                                }
-                                return isActive;
-                            })
-                            .map(flight => {
-                            const flightNumber = flight.flightNumber || '';
-                            const airlineName = flight.airline?.name || '';
-                            const registration = flight.aircraft?.registration || '';
-
-                            // Get full city name and country
-                            const originCity = flight.destination?.city?.name || flight.destination?.name || '';
-                            const originCountry = flight.destination?.city?.country?.name || '';
-                            const originIata = flight.destination?.iataCode || '';
-
-                            // Format: "City, Country" or fallback to IATA if city unknown
-                            let originFull = originCity;
-                            if (originCity && originCountry) {
-                                originFull = `${originCity}, ${originCountry}`;
-                            } else if (!originCity && originIata) {
-                                originFull = originIata;
-                            }
-
-                            // Parse times (estimated > actual > scheduled)
-                            const timeStr = flight.actualTime || flight.estimatedTime || flight.scheduledTime;
-                            const time = timeStr ? new Date(timeStr) : null;
-
-                            // Get time information
-                            const scheduledTime = flight.scheduledTime ? new Date(flight.scheduledTime) : null;
-                            const estimatedTime = flight.estimatedTime ? new Date(flight.estimatedTime) : null;
-
-                            const result = {
-                                flightNumber: flightNumber.trim(),
-                                origin: originFull,
-                                destination: 'Düsseldorf, Germany',
-                                airline: airlineName,
-                                registration: registration,
-                                time: time,
-                                timeStr: timeStr,
-                                scheduledTime: scheduledTime,
-                                estimatedTime: estimatedTime,
-                                status: flight.status?.publicStatus?.name || 'unknown'
-                            };
-                            if (registration) {
-                                console.log(`Arrival ${flightNumber} has registration: ${registration}`);
-                            }
-                            return result;
-                        }).filter(f => f.flightNumber && f.time);
-                        console.log(`After filtering: ${dusArrivals.length} active arrivals (from ${arrivals.length} total)`);
-                    } else {
-                        console.log('Arrivals request failed or returned bad data');
-                    }
-                  } catch (err) {
-                    console.error('Error fetching arrivals:', err);
-                  }
-                } else {
-                    console.log('Skipping arrivals fetch - not visible from office');
-                }
-
-                // Fetch departures only if visible from office
-                if (shouldFetchDepartures()) {
-                  try {
-                    const fullDepartureUrl = proxyUrl + encodeURIComponent(departureUrl);
-                    console.log('Fetching departures from:', fullDepartureUrl);
-
-                    const departuresResponse = await fetch(fullDepartureUrl, {
-                        method: 'GET',
-                        headers: {
-                            'X-Requested-With': 'XMLHttpRequest'
-                        }
-                    });
-
-                    console.log('Departures response status:', departuresResponse.status);
-                    const responseText = await departuresResponse.text();
-                    console.log('Departures response preview:', responseText.substring(0, 200));
-
-                    if (departuresResponse.ok && responseText && !responseText.startsWith('Bad Request')) {
-                        const departuresData = JSON.parse(responseText);
-                        const departures = departuresData.data?.flights || departuresData.Flights || departuresData.flights || [];
-
-                        console.log(`Found ${departures.length} departures in DUS API response`);
-                        if (departures.length > 0) {
-                            console.log('Sample departure:', JSON.stringify(departures[0]));
-                            console.log('Sample departure aircraft data:', JSON.stringify(departures[0].aircraft));
-                            // Log all unique statuses to help understand what's available
-                            const statuses = [...new Set(departures.map(f => f.status?.publicStatus?.name).filter(Boolean))];
-                            console.log('Departure statuses seen:', statuses);
-                        }
-
-                        // Store departures for time-based matching - filter for active flights only
-                        console.log(`Before filtering: ${departures.length} departures`);
-                        dusDepartures = departures
-                            .filter(flight => {
-                                const isActive = isActiveDeparture(flight);
-                                if (!isActive) {
-                                    const status = flight.status?.publicStatus?.name || 'unknown';
-                                    console.log(`Filtered out departure ${flight.flightNumber} with status: ${status}`);
-                                }
-                                return isActive;
-                            })
-                            .map(flight => {
-                            const flightNumber = flight.flightNumber || '';
-                            const airlineName = flight.airline?.name || '';
-                            const registration = flight.aircraft?.registration || '';
-
-                            // Get full city name and country
-                            const destCity = flight.destination?.city?.name || flight.destination?.name || '';
-                            const destCountry = flight.destination?.city?.country?.name || '';
-                            const destIata = flight.destination?.iataCode || '';
-
-                            // Format: "City, Country" or fallback to IATA if city unknown
-                            let destFull = destCity;
-                            if (destCity && destCountry) {
-                                destFull = `${destCity}, ${destCountry}`;
-                            } else if (!destCity && destIata) {
-                                destFull = destIata;
-                            }
-
-                            // Parse times (estimated > actual > scheduled)
-                            const timeStr = flight.actualTime || flight.estimatedTime || flight.scheduledTime;
-                            const time = timeStr ? new Date(timeStr) : null;
-
-                            // Get time information
-                            const scheduledTime = flight.scheduledTime ? new Date(flight.scheduledTime) : null;
-                            const estimatedTime = flight.estimatedTime ? new Date(flight.estimatedTime) : null;
-
-                            const result = {
-                                flightNumber: flightNumber.trim(),
-                                origin: 'Düsseldorf, Germany',
-                                destination: destFull,
-                                airline: airlineName,
-                                registration: registration,
-                                time: time,
-                                timeStr: timeStr,
-                                scheduledTime: scheduledTime,
-                                estimatedTime: estimatedTime,
-                                status: flight.status?.publicStatus?.name || 'unknown'
-                            };
-                            if (registration) {
-                                console.log(`Departure ${flightNumber} has registration: ${registration}`);
-                            }
-                            return result;
-                        }).filter(f => f.flightNumber && f.time);
-                        console.log(`After filtering: ${dusDepartures.length} active departures (from ${departures.length} total)`);
-                    } else {
-                        console.log('Departures request failed or returned bad data');
-                    }
-                  } catch (err) {
-                    console.error('Error fetching departures:', err);
-                  }
-                } else {
-                    console.log('Skipping departures fetch - not visible from office');
-                }
-
-                console.log(`Stored ${dusArrivals.length} arrivals and ${dusDepartures.length} departures`);
-            } catch (error) {
-                console.error('Error fetching DUS Airport data:', error);
-            }
-        }
-
-        // Match flight by time (more reliable than callsign matching)
-        function matchFlightByTime(status, distanceToAirport) {
-            const now = new Date();
-            const timeWindow = 30 * 60 * 1000; // 30 minutes in milliseconds
-
-            // Choose the right list based on arrival/departure
-            const flightList = status === 'arriving' ? dusArrivals : dusDepartures;
-
-            // Find flights within time window
-            const candidates = flightList.filter(f => {
-                const timeDiff = Math.abs(f.time - now);
-                return timeDiff <= timeWindow;
-            });
-
-            if (candidates.length === 0) return null;
-
-            // Sort by time proximity (closest to now)
-            candidates.sort((a, b) => Math.abs(a.time - now) - Math.abs(b.time - now));
-
-            // Return the closest match
-            const match = candidates[0];
-            const minutesAway = Math.round((match.time - now) / 60000);
-            console.log(`Time-matched ${status} flight: ${match.flightNumber} (${match.airline}) ${minutesAway > 0 ? 'in ' + minutesAway + ' min' : Math.abs(minutesAway) + ' min ago'}`);
-
-            return match;
-        }
-
-        // Extract airline name from callsign or flight number
-        function extractAirlineName(callsign, flightNumber) {
-            const airlines = {
-                'DLH': 'Lufthansa',
-                'EWG': 'Eurowings',
-                'EW': 'Eurowings',
-                'RYR': 'Ryanair',
-                'FR': 'Ryanair',
-                'EZY': 'easyJet',
-                'U2': 'easyJet',
-                'BAW': 'British Airways',
-                'BA': 'British Airways',
-                'AFR': 'Air France',
-                'AF': 'Air France',
-                'KLM': 'KLM',
-                'AUA': 'Austrian Airlines',
-                'OS': 'Austrian Airlines',
-                'SWR': 'Swiss',
-                'LX': 'Swiss',
-                'TAP': 'TAP Portugal',
-                'TP': 'TAP Portugal',
-                'IBE': 'Iberia',
-                'IB': 'Iberia',
-                'AEE': 'Aegean Airlines',
-                'A3': 'Aegean Airlines',
-                'SAS': 'SAS',
-                'SK': 'SAS',
-                'FIN': 'Finnair',
-                'AY': 'Finnair',
-                'THY': 'Turkish Airlines',
-                'TK': 'Turkish Airlines',
-                'UAE': 'Emirates',
-                'EK': 'Emirates',
-                'ETD': 'Etihad',
-                'EY': 'Etihad',
-                'QTR': 'Qatar Airways',
-                'QR': 'Qatar Airways',
-                'AIC': 'Air India',
-                'AI': 'Air India',
-                'UAL': 'United Airlines',
-                'UA': 'United Airlines',
-                'AAL': 'American Airlines',
-                'AA': 'American Airlines',
-                'DAL': 'Delta Air Lines',
-                'DL': 'Delta Air Lines',
-                'WZZ': 'Wizz Air',
-                'W6': 'Wizz Air',
-                'VLG': 'Vueling',
-                'VY': 'Vueling',
-                'BER': 'Air Berlin',
-                'AB': 'Air Berlin',
-                'EIN': 'Aer Lingus',
-                'EI': 'Aer Lingus',
-                'NAX': 'Norwegian',
-                'DY': 'Norwegian',
-                'SWN': 'Sunwing',
-                'WG': 'Sunwing',
-                'CLH': 'Lufthansa Cargo',
-                'GEC': 'Lufthansa Cargo',
-                'BCS': 'European Air Transport',
-                'QY': 'European Air Transport',
-                'CFG': 'Condor',
-                'DE': 'Condor',
-                'TUI': 'TUI',
-                'X3': 'TUI',
-                'BEE': 'FlyBe',
-                'BE': 'FlyBe',
-                'LOG': 'Loganair',
-                'LM': 'Loganair',
-                'AIB': 'Avanti Air'
-            };
-
-            // Try to match the first 2-3 characters of the callsign
-            const code = callsign.substring(0, 3).toUpperCase();
-            if (airlines[code]) return airlines[code];
-
-            const code2 = callsign.substring(0, 2).toUpperCase();
-            if (airlines[code2]) return airlines[code2];
-
-            // Try from flight number
-            if (flightNumber) {
-                const fnCode = flightNumber.substring(0, 2).toUpperCase();
-                if (airlines[fnCode]) return airlines[fnCode];
-            }
-
-            return '';
-        }
-
-        // Display DUS flights directly (without OpenSky data)
-        async function displayDUSFlights() {
+        // Update flight details cache and display
+        // Display flights from FR24 data
+        async function displayFlights() {
             const container = document.getElementById('flights-container');
 
-            // Combine active arrivals and departures, filtered by runway visibility
-            const visibleArrivals = isVisibleFromOffice(true)
-                ? dusArrivals.map(f => ({...f, flightStatus: 'arriving'}))
-                : [];
-
-            const visibleDepartures = isVisibleFromOffice(false)
-                ? dusDepartures.map(f => ({...f, flightStatus: 'departing'}))
-                : [];
-
-            const allFlights = [...visibleArrivals, ...visibleDepartures];
-
-            if (allFlights.length === 0) {
+            if (!fr24FlightData || fr24FlightData.length === 0) {
                 container.innerHTML = `
                     <div class="no-flights">
                         <div class="plane-icon">🔍</div>
-                        <div>No active flights</div>
+                        <div>No flights in viewing area</div>
                         <div style="font-size: 0.8em; margin-top: 15px; opacity: 0.7;">
-                            Waiting for flights in approach or taxiing...
+                            Looking northeast from ITQ office...
                         </div>
                     </div>
                 `;
                 return;
             }
 
-            // Sort by time (soonest first)
-            allFlights.sort((a, b) => a.time - b.time);
+            console.log(`Processing ${fr24FlightData.length} flights for display`);
 
-            // Display flight rows with placeholders first
-            container.innerHTML = allFlights.map(flight => {
-                const flightNumber = flight.flightNumber;
-                const airline = flight.airline || '';
-                const flightStatus = flight.flightStatus;
+            // Fetch details for each flight and enrich data
+            const enrichedFlights = await Promise.all(
+                fr24FlightData.map(async (flight) => {
+                    const details = await fetchFlightDetails(flight.id);
 
-                // Get the location to show (origin for arrivals, destination for departures)
+                    return {
+                        ...flight,
+                        details: details,
+                        // Extract useful info from details
+                        airline_name: details?.airline?.name || flight.airline_icao || '',
+                        origin_name: details?.airport?.origin?.name || flight.origin_iata || '',
+                        origin_city: details?.airport?.origin?.position?.region?.city || '',
+                        origin_country: details?.airport?.origin?.position?.country?.name || '',
+                        destination_name: details?.airport?.destination?.name || flight.destination_iata || '',
+                        destination_city: details?.airport?.destination?.position?.region?.city || '',
+                        destination_country: details?.airport?.destination?.position?.country?.name || '',
+                        scheduled_time: details?.time?.scheduled?.departure || details?.time?.scheduled?.arrival || 0,
+                        estimated_time: details?.time?.estimated?.departure || details?.time?.estimated?.arrival || 0,
+                        status_text: details?.status?.text || ''
+                    };
+                })
+            );
+
+            // Sort by scheduled time
+            enrichedFlights.sort((a, b) => a.scheduled_time - b.scheduled_time);
+
+            console.log(`Displaying ${enrichedFlights.length} flights`);
+
+            // Determine if arriving or departing based on destination
+            const flightsHtml = enrichedFlights.map(flight => {
+                const isArriving = flight.destination_iata === 'DUS' || flight.destination_name?.includes('Düsseldorf');
+                const flightStatus = isArriving ? 'arriving' : 'departing';
+
+                // Get location to display
                 let location, locationLabel, countryFlag;
-                if (flightStatus === 'arriving') {
-                    location = flight.origin || '';
+                if (isArriving) {
+                    const country = flight.origin_country || '';
+                    const city = flight.origin_city || flight.origin_name || flight.origin_iata;
+                    location = country ? `${city}, ${country}` : city;
                     locationLabel = 'from';
-                    const country = extractCountryFromLocation(location);
                     countryFlag = getCountryFlag(country);
                 } else {
-                    location = flight.destination || '';
+                    const country = flight.destination_country || '';
+                    const city = flight.destination_city || flight.destination_name || flight.destination_iata;
+                    location = country ? `${city}, ${country}` : city;
                     locationLabel = 'to';
-                    const country = extractCountryFromLocation(location);
                     countryFlag = getCountryFlag(country);
                 }
 
-                // Create unique ID for this flight row
-                const rowId = `flight-${flightNumber.replace(/\s/g, '-')}`;
-
                 // Format times
                 let timeDisplay = '';
-                if (flight.scheduledTime) {
-                    const scheduled = flight.scheduledTime.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+                if (flight.scheduled_time) {
+                    const scheduled = new Date(flight.scheduled_time * 1000).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
                     timeDisplay = `<div style="font-size: 0.85em; color: #64748b; margin-top: 2px;">Planned: ${scheduled}`;
 
-                    if (flight.estimatedTime && flight.estimatedTime.getTime() !== flight.scheduledTime.getTime()) {
-                        const estimated = flight.estimatedTime.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+                    if (flight.estimated_time && flight.estimated_time !== flight.scheduled_time) {
+                        const estimated = new Date(flight.estimated_time * 1000).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
                         timeDisplay += ` | Expected: ${estimated}`;
                     }
                     timeDisplay += '</div>';
                 }
 
+                const rowId = `flight-${flight.flight_number?.replace(/\s/g, '-') || flight.id}`;
+                const photoId = `${rowId}-photo`;
+
                 return `
                     <div class="flight-row ${flightStatus}" id="${rowId}">
-                        <div class="flight-photo" id="${rowId}-photo">✈️</div>
+                        <div class="flight-photo" id="${photoId}">✈️</div>
                         <div class="flight-info">
-                            <div class="flight-number">${flightNumber}</div>
-                            ${airline ? `<div class="flight-airline">${airline}</div>` : ''}
+                            <div class="flight-number">${flight.flight_number || flight.callsign || 'Unknown'}</div>
+                            ${flight.airline_name ? `<div class="flight-airline">${flight.airline_name}</div>` : ''}
                             <div class="flight-route">${countryFlag} ${locationLabel} ${location}</div>
                             ${timeDisplay}
+                            <div style="font-size: 0.75em; color: #9ca3af; margin-top: 2px;">${flight.registration || 'No reg'}</div>
                         </div>
                         <div class="status-badge ${flightStatus}">${flightStatus}</div>
                     </div>
                 `;
             }).join('');
 
-            // Asynchronously fetch and update aircraft photos
-            console.log(`Attempting to fetch photos for ${allFlights.length} flights`);
-            allFlights.forEach(async (flight, index) => {
-                console.log(`Flight ${index}: ${flight.flightNumber}, DUS registration: ${flight.registration || 'NONE'}`);
+            container.innerHTML = flightsHtml;
 
-                let registration = flight.registration;
-
-                // If no registration from DUS API, try FlightRadar24 cached data
-                if (!registration) {
-                    registration = getRegistrationFromFR24(flight.flightNumber);
-                }
-
-                if (registration) {
-                    const photoUrl = await fetchAircraftPhoto(registration);
+            // Load photos asynchronously
+            enrichedFlights.forEach(async (flight) => {
+                if (flight.registration) {
+                    const photoUrl = await fetchAircraftPhoto(flight.registration);
                     if (photoUrl) {
-                        const rowId = `flight-${flight.flightNumber.replace(/\s/g, '-')}`;
+                        const rowId = `flight-${flight.flight_number?.replace(/\s/g, '-') || flight.id}`;
                         const photoElement = document.getElementById(`${rowId}-photo`);
                         if (photoElement) {
-                            photoElement.innerHTML = `<img src="${photoUrl}" alt="${registration}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 6px;" onerror="this.parentElement.innerHTML='✈️'">`;
+                            photoElement.innerHTML = `<img src="${photoUrl}" alt="${flight.registration}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 8px;" onerror="this.parentElement.innerHTML='✈️'">`;
                         }
                     }
-                } else {
-                    console.log(`No registration available for flight ${flight.flightNumber} (tried DUS and FR24)`);
                 }
             });
 
             document.getElementById('last-update').textContent = `Last updated: ${new Date().toLocaleTimeString()}`;
         }
 
-        // Update ATIS and runway configuration
-        async function updateATIS() {
+        // Update and display flights
+        async function updateAndDisplayFlights() {
             const now = Date.now();
-            // Fetch every 5 minutes (runways don't change often)
-            if (now - lastATISFetch > 300000 || lastATISFetch === 0) {
-                const runwayConfig = await fetchATIS();
-                if (runwayConfig) {
-                    activeRunways = runwayConfig;
-                    lastATISFetch = now;
-                    console.log('Updated runway configuration from ATIS');
-                }
+            // Fetch every 2 minutes
+            if (now - lastFR24Fetch > 120000 || lastFR24Fetch === 0) {
+                await fetchFlightRadar24Data();
+                await displayFlights();
             }
         }
 
-        // Update flight details cache and display
-        async function updateFlightDetailsCache() {
-            const now = Date.now();
-            // Fetch every minute for live updates
-            if (now - lastDetailsFetch > 60000 || lastDetailsFetch === 0) {
-                // Update ATIS first to get current runway config
-                await updateATIS();
+        // Initial load
+        updateAndDisplayFlights();
 
-                // Fetch FR24 data to get aircraft registrations (every 2 minutes to reduce load)
-                if (now - lastFR24Fetch > 120000 || lastFR24Fetch === 0) {
-                    await fetchFlightRadar24Data();
-                }
-
-                await fetchDUSFlights();
-
-                lastDetailsFetch = now;
-                console.log(`Flight details updated: ${dusArrivals.length} arrivals, ${dusDepartures.length} departures from DUS Airport`);
-                console.log(`FR24 cache has ${Object.keys(fr24FlightData).length} flight entries`);
-
-                // Display DUS flights directly (no need to wait for OpenSky)
-                displayDUSFlights();
-            }
-        }
-
-        // Initial load - fetch DUS Airport data immediately
-        updateFlightDetailsCache();
-
-        // Refresh DUS Airport data every minute for live updates
-        setInterval(updateFlightDetailsCache, 60000);
+        // Refresh every 2 minutes
+        setInterval(updateAndDisplayFlights, 120000);
     </script>
 </body>
 </html>
