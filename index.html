@@ -3,8 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ITQ Plane Spotter - Düsseldorf Airport</title>
+    <title>ITQ Plane Spotter - Real-Time Aviation Intelligence</title>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>✈️</text></svg>">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
         * {
             margin: 0;
@@ -12,104 +15,167 @@
             box-sizing: border-box;
         }
 
+        :root {
+            --navy-900: #0f172a;
+            --navy-800: #1e293b;
+            --navy-700: #334155;
+            --charcoal: #1a1a1a;
+            --orange: #ff6b35;
+            --orange-hover: #ff5722;
+            --white: #ffffff;
+            --gray-50: #f8fafc;
+            --gray-100: #f1f5f9;
+            --gray-200: #e2e8f0;
+            --gray-600: #475569;
+            --gray-700: #334155;
+        }
+
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', sans-serif;
-            background: #f5f7fa;
-            color: #2c3e50;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: var(--gray-50);
+            color: var(--navy-900);
             padding: 0;
             min-height: 100vh;
+            line-height: 1.6;
         }
 
         .container {
             max-width: 1400px;
             margin: 0 auto;
-            padding: 20px;
+            padding: 0;
         }
 
         header {
-            text-align: center;
-            margin-bottom: 40px;
-            padding: 40px 30px;
-            background: linear-gradient(135deg, #0066cc 0%, #004c99 100%);
-            color: white;
-            box-shadow: 0 4px 12px rgba(0, 102, 204, 0.15);
+            background: linear-gradient(135deg, var(--navy-900) 0%, var(--navy-800) 100%);
+            color: var(--white);
+            padding: 80px 40px;
+            margin-bottom: 0;
             position: relative;
+            overflow: hidden;
         }
 
-        header::after {
-            content: 'v1.1';
+        header::before {
+            content: '';
             position: absolute;
-            top: 10px;
-            right: 15px;
-            font-size: 0.7em;
-            opacity: 0.6;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(135deg, transparent 0%, rgba(255, 107, 53, 0.05) 100%);
+            pointer-events: none;
+        }
+
+        .hero-content {
+            position: relative;
+            z-index: 1;
+            max-width: 1200px;
+            margin: 0 auto;
         }
 
         h1 {
-            font-size: 2.2em;
-            margin-bottom: 8px;
-            font-weight: 600;
-            letter-spacing: -0.5px;
+            font-size: 3.5em;
+            margin-bottom: 16px;
+            font-weight: 800;
+            letter-spacing: -1.5px;
+            line-height: 1.1;
         }
 
-        .location-info {
+        .hero-accent {
+            color: var(--orange);
+        }
+
+        .tagline {
+            font-size: 1.25em;
+            opacity: 0.9;
+            margin-bottom: 8px;
+            font-weight: 500;
+            letter-spacing: -0.3px;
+        }
+
+        .hero-description {
             font-size: 1em;
-            opacity: 0.95;
-            margin-top: 8px;
+            opacity: 0.7;
+            max-width: 600px;
+            margin: 0 auto;
+            font-weight: 400;
+            line-height: 1.6;
+        }
+
+        .main-section {
+            padding: 60px 40px;
+            background: var(--white);
+        }
+
+        .section-header {
+            max-width: 1200px;
+            margin: 0 auto 40px;
+            text-align: center;
+        }
+
+        .section-title {
+            font-size: 2em;
+            font-weight: 700;
+            color: var(--navy-900);
+            margin-bottom: 12px;
+            letter-spacing: -0.8px;
+        }
+
+        .section-subtitle {
+            font-size: 1.1em;
+            color: var(--gray-600);
             font-weight: 400;
         }
 
-        .status {
-            text-align: center;
-            padding: 15px;
-            margin-bottom: 20px;
-            background: white;
-            border-radius: 8px;
-            font-size: 1em;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-            color: #2c3e50;
-        }
-
-        .loading {
-            animation: pulse 2s infinite;
-        }
-
-        @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.6; }
-        }
-
         .flights-container {
-            display: flex;
-            flex-direction: column;
-            gap: 16px;
-            margin-bottom: 30px;
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+            gap: 24px;
+            max-width: 1200px;
+            margin: 0 auto;
         }
 
         .flight-row {
-            background: white;
-            color: #2c3e50;
-            padding: 24px;
-            border-radius: 12px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-            transition: all 0.2s ease;
-            animation: slideIn 0.3s ease;
-            display: grid;
-            grid-template-columns: 100px 1fr auto;
-            gap: 24px;
-            align-items: center;
-            border: 1px solid #e8edf2;
+            background: var(--white);
+            padding: 28px;
+            border-radius: 16px;
+            box-shadow: 0 1px 3px rgba(15, 23, 42, 0.08), 0 1px 2px rgba(15, 23, 42, 0.04);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            animation: slideIn 0.4s ease;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            border: 1px solid var(--gray-200);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .flight-row::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: var(--orange);
+            transform: scaleX(0);
+            transform-origin: left;
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
         .flight-row:hover {
-            box-shadow: 0 4px 16px rgba(0, 102, 204, 0.12);
-            transform: translateY(-2px);
+            box-shadow: 0 12px 24px rgba(255, 107, 53, 0.12), 0 4px 8px rgba(15, 23, 42, 0.08);
+            transform: translateY(-4px);
+            border-color: var(--orange);
+        }
+
+        .flight-row:hover::before {
+            transform: scaleX(1);
         }
 
         @keyframes slideIn {
             from {
                 opacity: 0;
-                transform: translateY(10px);
+                transform: translateY(20px);
             }
             to {
                 opacity: 1;
@@ -117,168 +183,323 @@
             }
         }
 
-        .flight-row.arriving {
-            border-left: 5px solid #10b981;
+        .flight-row.arriving::after {
+            content: '↓';
+            position: absolute;
+            top: 28px;
+            right: 28px;
+            font-size: 1.5em;
+            color: var(--orange);
+            opacity: 0.3;
+            font-weight: 700;
         }
 
-        .flight-row.departing {
-            border-left: 5px solid #ff6b35;
+        .flight-row.departing::after {
+            content: '↑';
+            position: absolute;
+            top: 28px;
+            right: 28px;
+            font-size: 1.5em;
+            color: var(--orange);
+            opacity: 0.3;
+            font-weight: 700;
+        }
+
+        .flight-header {
+            display: flex;
+            gap: 20px;
+            align-items: flex-start;
         }
 
         .flight-photo {
-            width: 100px;
-            height: 75px;
+            width: 120px;
+            height: 90px;
             object-fit: cover;
-            border-radius: 8px;
-            background: #f0f4f8;
+            border-radius: 12px;
+            background: var(--gray-100);
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 2.5em;
-            border: 1px solid #e8edf2;
+            font-size: 3em;
+            border: 1px solid var(--gray-200);
+            flex-shrink: 0;
         }
 
         .flight-info {
             display: flex;
             flex-direction: column;
-            gap: 6px;
+            gap: 8px;
+            flex: 1;
         }
 
         .flight-number {
-            font-size: 1.5em;
+            font-size: 1.75em;
             font-weight: 700;
-            color: #0066cc;
-            letter-spacing: -0.3px;
+            color: var(--navy-900);
+            letter-spacing: -0.5px;
+            line-height: 1;
         }
 
         .flight-airline {
-            font-size: 0.95em;
-            color: #6b7280;
+            font-size: 0.9em;
+            color: var(--gray-600);
             font-weight: 500;
-        }
-
-        .flight-route {
-            font-size: 1.05em;
-            color: #2c3e50;
-            font-weight: 500;
-            margin-top: 2px;
-        }
-
-        .status-badge {
-            padding: 10px 20px;
-            border-radius: 24px;
-            font-size: 0.8em;
-            font-weight: 700;
             text-transform: uppercase;
-            white-space: nowrap;
             letter-spacing: 0.5px;
         }
 
-        .status-badge.arriving {
-            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-            color: white;
-            box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
+        .flight-route {
+            font-size: 1.1em;
+            color: var(--navy-800);
+            font-weight: 600;
+            margin-top: 4px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
         }
 
-        .status-badge.departing {
-            background: linear-gradient(135deg, #ff6b35 0%, #f04e23 100%);
-            color: white;
-            box-shadow: 0 2px 8px rgba(255, 107, 53, 0.3);
+        .flight-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-top: 16px;
+            border-top: 1px solid var(--gray-200);
+        }
+
+        .flight-times {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .time-row {
+            font-size: 0.85em;
+            color: var(--gray-600);
+            font-weight: 500;
+        }
+
+        .time-label {
+            color: var(--gray-600);
+            margin-right: 6px;
+        }
+
+        .time-value {
+            color: var(--navy-900);
+            font-weight: 600;
+        }
+
+        .status-badge {
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 0.75em;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            background: var(--orange);
+            color: var(--white);
+            box-shadow: 0 2px 8px rgba(255, 107, 53, 0.25);
         }
 
         .footer {
-            text-align: center;
-            padding: 24px;
-            background: white;
-            border-radius: 12px;
-            margin-top: 30px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-            border: 1px solid #e8edf2;
+            background: var(--navy-900);
+            color: var(--white);
+            padding: 48px 40px 32px;
+            margin-top: 0;
         }
 
-        .last-update {
+        .footer-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 24px;
+        }
+
+        .footer-info {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .footer-title {
+            font-size: 1.1em;
+            font-weight: 700;
+            color: var(--orange);
+            letter-spacing: -0.3px;
+        }
+
+        .footer-text {
             font-size: 0.9em;
-            color: #6b7280;
+            color: rgba(255, 255, 255, 0.7);
+            font-weight: 400;
+        }
+
+        .footer-links {
+            display: flex;
+            gap: 24px;
+            align-items: center;
+        }
+
+        .footer-link {
+            color: rgba(255, 255, 255, 0.7);
+            text-decoration: none;
+            font-size: 0.9em;
             font-weight: 500;
+            transition: color 0.2s ease;
+        }
+
+        .footer-link:hover {
+            color: var(--orange);
+        }
+
+        .footer-divider {
+            width: 100%;
+            height: 1px;
+            background: rgba(255, 255, 255, 0.1);
+            margin: 24px 0 16px;
+        }
+
+        .footer-bottom {
+            text-align: center;
+            font-size: 0.85em;
+            color: rgba(255, 255, 255, 0.5);
+            font-weight: 400;
         }
 
         .no-flights {
             text-align: center;
-            padding: 60px 20px;
-            background: white;
-            border-radius: 12px;
-            font-size: 1.2em;
-            color: #6b7280;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-            border: 1px solid #e8edf2;
+            padding: 80px 40px;
+            background: var(--white);
+            border-radius: 16px;
+            border: 2px dashed var(--gray-200);
         }
 
         .plane-icon {
             font-size: 4em;
             margin-bottom: 20px;
-            opacity: 0.5;
+            opacity: 0.3;
+        }
+
+        .no-flights-title {
+            font-size: 1.5em;
+            font-weight: 700;
+            color: var(--navy-900);
+            margin-bottom: 8px;
+        }
+
+        .no-flights-text {
+            font-size: 1em;
+            color: var(--gray-600);
         }
 
         @media (max-width: 768px) {
             header {
-                padding: 30px 20px;
+                padding: 60px 24px;
             }
 
             h1 {
-                font-size: 1.6em;
+                font-size: 2.2em;
+            }
+
+            .tagline {
+                font-size: 1.1em;
+            }
+
+            .main-section {
+                padding: 40px 24px;
+            }
+
+            .flights-container {
+                grid-template-columns: 1fr;
+                gap: 20px;
             }
 
             .flight-row {
-                grid-template-columns: 70px 1fr;
+                padding: 20px;
+            }
+
+            .flight-header {
                 gap: 16px;
-                padding: 16px;
             }
 
             .flight-photo {
-                width: 70px;
-                height: 52px;
+                width: 90px;
+                height: 68px;
             }
 
             .flight-number {
-                font-size: 1.2em;
+                font-size: 1.4em;
             }
 
             .flight-route {
-                font-size: 0.95em;
+                font-size: 1em;
             }
 
-            .status-badge {
-                grid-column: 1 / -1;
-                justify-self: start;
-                margin-top: 8px;
-                padding: 8px 16px;
-                font-size: 0.75em;
+            .flight-meta {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 12px;
+            }
+
+            .footer {
+                padding: 36px 24px 24px;
+            }
+
+            .footer-content {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .footer-links {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 12px;
             }
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <header>
-            <h1>✈️ ITQ Plane Spotter</h1>
-        </header>
+    <header>
+        <div class="hero-content">
+            <h1>Real-Time <span class="hero-accent">Flight Intelligence</span></h1>
+            <div class="tagline">Precision Aviation Data at Your Fingertips</div>
+            <div class="hero-description">Live tracking of aircraft in the Düsseldorf Airport vicinity with comprehensive flight details and aircraft information</div>
+        </div>
+    </header>
+
+    <div class="main-section">
+        <div class="section-header">
+            <h2 class="section-title">Active Flights</h2>
+            <p class="section-subtitle" id="last-update">Scanning airspace...</p>
+        </div>
 
         <div class="flights-container" id="flights-container">
         </div>
-
-        <div class="footer">
-            <div class="last-update" id="last-update">Waiting for data...</div>
-            <div style="margin-top: 10px; opacity: 0.7; font-size: 0.9em;">
-                Live flight data from Düsseldorf Airport (updates every minute)
-            </div>
-        </div>
     </div>
 
+    <footer class="footer">
+        <div class="footer-content">
+            <div class="footer-info">
+                <div class="footer-title">ITQ Plane Spotter</div>
+                <div class="footer-text">Enterprise-grade aviation intelligence platform</div>
+            </div>
+            <div class="footer-links">
+                <a href="https://www.flightradar24.com" target="_blank" class="footer-link">FlightRadar24</a>
+                <a href="https://www.planespotters.net" target="_blank" class="footer-link">Planespotters</a>
+                <a href="https://github.com" target="_blank" class="footer-link">GitHub</a>
+            </div>
+        </div>
+        <div class="footer-divider"></div>
+        <div class="footer-bottom">
+            Real-time data powered by FlightRadar24 API • Aircraft photos by Planespotters
+        </div>
+    </footer>
+
     <script>
-        // App version for cache busting
-        console.log('%c ITQ Plane Spotter v1.1 ', 'background: #0066cc; color: white; padding: 4px 8px; border-radius: 3px; font-weight: bold');
-        console.log('✈️ FR24 Feed + Professional Design');
-        console.log('⚠️ If you see CORS errors, press Ctrl+Shift+R (Windows) or Cmd+Shift+R (Mac) to hard refresh');
+        console.log('%c ITQ Plane Spotter ', 'background: #0f172a; color: #ff6b35; padding: 6px 12px; border-radius: 4px; font-weight: bold; font-family: Inter');
+        console.log('🛩️ Real-Time Flight Intelligence Platform');
 
         // Get country flag emoji
         function getCountryFlag(countryName) {
@@ -456,11 +677,9 @@
             if (!fr24FlightData || fr24FlightData.length === 0) {
                 container.innerHTML = `
                     <div class="no-flights">
-                        <div class="plane-icon">🔍</div>
-                        <div>No flights in viewing area</div>
-                        <div style="font-size: 0.8em; margin-top: 15px; opacity: 0.7;">
-                            Looking northeast from ITQ office...
-                        </div>
+                        <div class="plane-icon">✈️</div>
+                        <div class="no-flights-title">No Active Flights</div>
+                        <div class="no-flights-text">Scanning for aircraft in the viewing area...</div>
                     </div>
                 `;
                 return;
@@ -518,16 +737,15 @@
                 }
 
                 // Format times
-                let timeDisplay = '';
+                let timesHtml = '';
                 if (flight.scheduled_time) {
-                    const scheduled = new Date(flight.scheduled_time * 1000).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
-                    timeDisplay = `<div style="font-size: 0.85em; color: #64748b; margin-top: 2px;">Planned: ${scheduled}`;
+                    const scheduled = new Date(flight.scheduled_time * 1000).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
+                    timesHtml += `<div class="time-row"><span class="time-label">Scheduled:</span><span class="time-value">${scheduled}</span></div>`;
 
                     if (flight.estimated_time && flight.estimated_time !== flight.scheduled_time) {
-                        const estimated = new Date(flight.estimated_time * 1000).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
-                        timeDisplay += ` | Expected: ${estimated}`;
+                        const estimated = new Date(flight.estimated_time * 1000).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
+                        timesHtml += `<div class="time-row"><span class="time-label">Expected:</span><span class="time-value">${estimated}</span></div>`;
                     }
-                    timeDisplay += '</div>';
                 }
 
                 const rowId = `flight-${flight.flight_number?.replace(/\s/g, '-') || flight.id}`;
@@ -535,15 +753,28 @@
 
                 return `
                     <div class="flight-row ${flightStatus}" id="${rowId}">
-                        <div class="flight-photo" id="${photoId}">✈️</div>
-                        <div class="flight-info">
-                            <div class="flight-number">${flight.flight_number || flight.callsign || 'Unknown'}</div>
-                            ${flight.airline_name ? `<div class="flight-airline">${flight.airline_name}</div>` : ''}
-                            <div class="flight-route">${countryFlag} ${locationLabel} ${location}</div>
-                            ${timeDisplay}
-                            <div style="font-size: 0.75em; color: #9ca3af; margin-top: 2px;">${flight.registration || 'No reg'}</div>
+                        <div class="flight-header">
+                            <div class="flight-photo" id="${photoId}">✈️</div>
+                            <div class="flight-info">
+                                <div class="flight-number">${flight.flight_number || flight.callsign || 'Unknown'}</div>
+                                ${flight.airline_name ? `<div class="flight-airline">${flight.airline_name}</div>` : ''}
+                                <div class="flight-route">
+                                    <span>${countryFlag}</span>
+                                    <span>${locationLabel} ${location}</span>
+                                </div>
+                            </div>
                         </div>
-                        <div class="status-badge ${flightStatus}">${flightStatus}</div>
+                        ${timesHtml ? `
+                            <div class="flight-meta">
+                                <div class="flight-times">${timesHtml}</div>
+                                <div class="status-badge">${flightStatus}</div>
+                            </div>
+                        ` : `
+                            <div class="flight-meta">
+                                <div></div>
+                                <div class="status-badge">${flightStatus}</div>
+                            </div>
+                        `}
                     </div>
                 `;
             }).join('');
@@ -558,13 +789,15 @@
                         const rowId = `flight-${flight.flight_number?.replace(/\s/g, '-') || flight.id}`;
                         const photoElement = document.getElementById(`${rowId}-photo`);
                         if (photoElement) {
-                            photoElement.innerHTML = `<img src="${photoUrl}" alt="${flight.registration}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 8px;" onerror="this.parentElement.innerHTML='✈️'">`;
+                            photoElement.innerHTML = `<img src="${photoUrl}" alt="${flight.registration}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 12px;" onerror="this.parentElement.innerHTML='✈️'">`;
                         }
                     }
                 }
             });
 
-            document.getElementById('last-update').textContent = `Last updated: ${new Date().toLocaleTimeString()}`;
+            const now = new Date();
+            const timeStr = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
+            document.getElementById('last-update').textContent = `Updated at ${timeStr} • ${enrichedFlights.length} active flight${enrichedFlights.length !== 1 ? 's' : ''}`;
         }
 
         // Update and display flights
