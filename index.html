@@ -304,6 +304,55 @@
             return '';
         }
 
+        // Fetch aircraft registration from FlightRadar24 API
+        async function fetchFlightRadar24Registration(flightNumber) {
+            if (!flightNumber) return null;
+            try {
+                // Remove spaces from flight number for FR24 API
+                const cleanFlightNumber = flightNumber.replace(/\s+/g, '').toUpperCase();
+
+                // FR24 search API endpoint
+                const searchUrl = `https://api.flightradar24.com/common/v1/search.json?query=${cleanFlightNumber}&limit=1`;
+
+                console.log(`Searching FlightRadar24 for ${cleanFlightNumber}`);
+                const response = await fetch(searchUrl);
+
+                if (response.ok) {
+                    const data = await response.json();
+
+                    // Check if we have flight results
+                    if (data.results && data.results.length > 0) {
+                        const flight = data.results[0];
+
+                        // Try to get live flight data if available
+                        if (flight.id) {
+                            const detailUrl = `https://api.flightradar24.com/common/v1/flight/list.json?query=${flight.id}&fetchBy=flight&page=1&limit=1`;
+                            const detailResponse = await fetch(detailUrl);
+
+                            if (detailResponse.ok) {
+                                const detailData = await detailResponse.json();
+                                if (detailData.result && detailData.result.response && detailData.result.response.data) {
+                                    const flightData = detailData.result.response.data[0];
+                                    const registration = flightData?.aircraft?.registration;
+
+                                    if (registration) {
+                                        console.log(`FR24: ${cleanFlightNumber} -> ${registration}`);
+                                        return registration;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                console.log(`FR24: No registration found for ${cleanFlightNumber}`);
+                return null;
+            } catch (error) {
+                console.error(`Error fetching FR24 data for ${flightNumber}:`, error);
+                return null;
+            }
+        }
+
         // Fetch aircraft photo from Planespotters API
         async function fetchAircraftPhoto(registration) {
             if (!registration) return null;
@@ -695,6 +744,10 @@
                             const timeStr = flight.actualTime || flight.estimatedTime || flight.scheduledTime;
                             const time = timeStr ? new Date(timeStr) : null;
 
+                            // Get time information
+                            const scheduledTime = flight.scheduledTime ? new Date(flight.scheduledTime) : null;
+                            const estimatedTime = flight.estimatedTime ? new Date(flight.estimatedTime) : null;
+
                             const result = {
                                 flightNumber: flightNumber.trim(),
                                 origin: originFull,
@@ -703,6 +756,8 @@
                                 registration: registration,
                                 time: time,
                                 timeStr: timeStr,
+                                scheduledTime: scheduledTime,
+                                estimatedTime: estimatedTime,
                                 status: flight.status?.publicStatus?.name || 'unknown'
                             };
                             if (registration) {
@@ -784,6 +839,10 @@
                             const timeStr = flight.actualTime || flight.estimatedTime || flight.scheduledTime;
                             const time = timeStr ? new Date(timeStr) : null;
 
+                            // Get time information
+                            const scheduledTime = flight.scheduledTime ? new Date(flight.scheduledTime) : null;
+                            const estimatedTime = flight.estimatedTime ? new Date(flight.estimatedTime) : null;
+
                             const result = {
                                 flightNumber: flightNumber.trim(),
                                 origin: 'Düsseldorf, Germany',
@@ -792,6 +851,8 @@
                                 registration: registration,
                                 time: time,
                                 timeStr: timeStr,
+                                scheduledTime: scheduledTime,
+                                estimatedTime: estimatedTime,
                                 status: flight.status?.publicStatus?.name || 'unknown'
                             };
                             if (registration) {
@@ -985,6 +1046,19 @@
                 // Create unique ID for this flight row
                 const rowId = `flight-${flightNumber.replace(/\s/g, '-')}`;
 
+                // Format times
+                let timeDisplay = '';
+                if (flight.scheduledTime) {
+                    const scheduled = flight.scheduledTime.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+                    timeDisplay = `<div style="font-size: 0.85em; color: #64748b; margin-top: 2px;">Planned: ${scheduled}`;
+
+                    if (flight.estimatedTime && flight.estimatedTime.getTime() !== flight.scheduledTime.getTime()) {
+                        const estimated = flight.estimatedTime.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+                        timeDisplay += ` | Expected: ${estimated}`;
+                    }
+                    timeDisplay += '</div>';
+                }
+
                 return `
                     <div class="flight-row ${flightStatus}" id="${rowId}">
                         <div class="flight-photo" id="${rowId}-photo">✈️</div>
@@ -992,6 +1066,7 @@
                             <div class="flight-number">${flightNumber}</div>
                             ${airline ? `<div class="flight-airline">${airline}</div>` : ''}
                             <div class="flight-route">${countryFlag} ${locationLabel} ${location}</div>
+                            ${timeDisplay}
                         </div>
                         <div class="status-badge ${flightStatus}">${flightStatus}</div>
                     </div>
@@ -1001,18 +1076,27 @@
             // Asynchronously fetch and update aircraft photos
             console.log(`Attempting to fetch photos for ${allFlights.length} flights`);
             allFlights.forEach(async (flight, index) => {
-                console.log(`Flight ${index}: ${flight.flightNumber}, registration: ${flight.registration || 'NONE'}`);
-                if (flight.registration) {
-                    const photoUrl = await fetchAircraftPhoto(flight.registration);
+                console.log(`Flight ${index}: ${flight.flightNumber}, DUS registration: ${flight.registration || 'NONE'}`);
+
+                let registration = flight.registration;
+
+                // If no registration from DUS API, try FlightRadar24
+                if (!registration) {
+                    console.log(`Trying FlightRadar24 for ${flight.flightNumber}...`);
+                    registration = await fetchFlightRadar24Registration(flight.flightNumber);
+                }
+
+                if (registration) {
+                    const photoUrl = await fetchAircraftPhoto(registration);
                     if (photoUrl) {
                         const rowId = `flight-${flight.flightNumber.replace(/\s/g, '-')}`;
                         const photoElement = document.getElementById(`${rowId}-photo`);
                         if (photoElement) {
-                            photoElement.innerHTML = `<img src="${photoUrl}" alt="${flight.registration}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 6px;" onerror="this.parentElement.innerHTML='✈️'">`;
+                            photoElement.innerHTML = `<img src="${photoUrl}" alt="${registration}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 6px;" onerror="this.parentElement.innerHTML='✈️'">`;
                         }
                     }
                 } else {
-                    console.log(`No registration for flight ${flight.flightNumber}`);
+                    console.log(`No registration available for flight ${flight.flightNumber} (tried DUS and FR24)`);
                 }
             });
 
