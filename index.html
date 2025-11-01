@@ -16,6 +16,9 @@
         }
 
         :root {
+            --primary-blue: #0057a3;
+            --dark-blue: #004080;
+            --darker-blue: #003060;
             --navy-900: #0f172a;
             --navy-800: #1e293b;
             --navy-700: #334155;
@@ -26,17 +29,20 @@
             --gray-50: #f8fafc;
             --gray-100: #f1f5f9;
             --gray-200: #e2e8f0;
+            --gray-200-alpha: rgba(226, 232, 240, 0.1);
             --gray-600: #475569;
             --gray-700: #334155;
+            --white-semi: rgba(255, 255, 255, 0.6);
         }
 
         body {
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-            background: var(--gray-50);
-            color: var(--navy-900);
+            background: var(--primary-blue);
+            color: var(--white);
             padding: 0;
-            min-height: 100vh;
+            height: 100vh;
             line-height: 1.6;
+            overflow: hidden;
         }
 
         .container {
@@ -45,90 +51,179 @@
             padding: 0;
         }
 
-        header {
-            background: linear-gradient(135deg, var(--navy-900) 0%, var(--navy-800) 100%);
-            color: var(--white);
-            padding: 40px 40px;
-            margin-bottom: 0;
-            position: relative;
-            overflow: hidden;
-        }
-
-        header::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: linear-gradient(135deg, transparent 0%, rgba(255, 107, 53, 0.05) 100%);
-            pointer-events: none;
-        }
-
-        .hero-content {
-            position: relative;
-            z-index: 1;
-            max-width: 1200px;
-            margin: 0 auto;
-        }
-
-        h1 {
-            font-size: 2.5em;
-            margin-bottom: 0;
-            font-weight: 800;
-            letter-spacing: -1.5px;
-            line-height: 1.1;
-        }
-
-        .hero-accent {
-            color: var(--orange);
-        }
 
         .main-section {
-            padding: 40px 40px;
-            background: var(--white);
+            padding: 0;
+            background: var(--primary-blue);
+            height: calc(100vh - 60px);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            position: relative;
         }
 
-        .three-column-layout {
+        .dashboard-container {
             display: grid;
-            grid-template-columns: 400px 1fr 420px;
-            gap: 24px;
-            max-width: 1800px;
-            margin: 0 auto;
-            align-items: start;
+            grid-template-columns: 25% 40% 35%;
+            grid-template-rows: auto 1fr;
+            gap: 0;
+            height: 100%;
+            width: 100%;
+        }
+
+        .weather-panel {
+            grid-column: 1;
+            grid-row: 1 / 3;
+            background: var(--primary-blue);
+            padding: 30px;
+            overflow: hidden;
+            border-right: 1px solid var(--gray-200-alpha);
+        }
+
+        .map-panel {
+            grid-column: 2;
+            grid-row: 1 / 3;
+            background: var(--primary-blue);
+            padding: 30px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .flights-panel {
+            grid-column: 3;
+            grid-row: 1 / 3;
+            background: var(--primary-blue);
+            padding: 30px;
+            overflow: hidden;
+            border-left: 1px solid var(--gray-200-alpha);
         }
 
         .column {
             display: flex;
             flex-direction: column;
             gap: 20px;
+            height: 100%;
         }
 
         .section-title {
-            font-size: 1.5em;
+            font-size: 1.8em;
             font-weight: 700;
-            color: var(--navy-900);
-            margin-bottom: 16px;
+            color: var(--white);
+            margin-bottom: 20px;
             letter-spacing: -0.8px;
+            padding-bottom: 0;
+            border-bottom: none;
+            flex-shrink: 0;
         }
 
         .flights-container {
             display: flex;
             flex-direction: column;
             gap: 20px;
+            overflow-y: auto;
+            flex: 1;
+            padding-right: 8px;
+            min-height: 0;
+        }
+
+        .flights-container::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .flights-container::-webkit-scrollbar-track {
+            background: var(--dark-blue);
+            border-radius: 4px;
+        }
+
+        .flights-container::-webkit-scrollbar-thumb {
+            background: var(--white-semi);
+            border-radius: 4px;
+        }
+
+        .flights-container::-webkit-scrollbar-thumb:hover {
+            background: var(--white);
+        }
+
+        .upcoming-container {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            flex-shrink: 0;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .upcoming-container::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .upcoming-container::-webkit-scrollbar-track {
+            background: var(--dark-blue);
+            border-radius: 4px;
+        }
+
+        .upcoming-container::-webkit-scrollbar-thumb {
+            background: var(--white-semi);
+            border-radius: 4px;
+        }
+
+        .upcoming-row {
+            background: rgba(0, 0, 0, 0.15);
+            padding: 12px 16px;
+            border-radius: 6px;
+            border: 1px solid var(--gray-200-alpha);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: all 0.2s ease;
+        }
+
+        .upcoming-row:hover {
+            background: rgba(0, 0, 0, 0.25);
+            border-color: var(--white-semi);
+        }
+
+        .upcoming-info {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .upcoming-flight-number {
+            font-size: 1.1em;
+            font-weight: 700;
+            color: var(--white);
+        }
+
+        .upcoming-route {
+            font-size: 0.75em;
+            color: var(--white-semi);
+        }
+
+        .upcoming-eta {
+            font-size: 1.2em;
+            font-weight: 700;
+            color: var(--orange);
+            text-align: right;
+        }
+
+        .upcoming-eta-label {
+            font-size: 0.65em;
+            color: var(--white-semi);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
 
         .flight-row {
-            background: var(--white);
-            padding: 28px;
-            border-radius: 16px;
-            box-shadow: 0 1px 3px rgba(15, 23, 42, 0.08), 0 1px 2px rgba(15, 23, 42, 0.04);
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            background: rgba(0, 0, 0, 0.2);
+            padding: 20px;
+            border-radius: 8px;
+            transition: all 0.2s ease;
             animation: slideIn 0.4s ease;
             display: flex;
             flex-direction: column;
-            gap: 20px;
-            border: 1px solid var(--gray-200);
+            gap: 16px;
+            border: 1px solid var(--gray-200-alpha);
             position: relative;
             overflow: hidden;
         }
@@ -139,21 +234,19 @@
             top: 0;
             left: 0;
             right: 0;
-            height: 4px;
-            background: var(--orange);
-            transform: scaleX(0);
-            transform-origin: left;
-            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            height: 3px;
+            background: var(--white);
+            opacity: 0;
+            transition: opacity 0.2s ease;
         }
 
         .flight-row:hover {
-            box-shadow: 0 12px 24px rgba(255, 107, 53, 0.12), 0 4px 8px rgba(15, 23, 42, 0.08);
-            transform: translateY(-4px);
-            border-color: var(--orange);
+            background: rgba(0, 0, 0, 0.3);
+            border-color: var(--white);
         }
 
         .flight-row:hover::before {
-            transform: scaleX(1);
+            opacity: 1;
         }
 
         @keyframes slideIn {
@@ -170,43 +263,47 @@
         .flight-row.arriving::after {
             content: '↓';
             position: absolute;
-            top: 28px;
-            right: 28px;
-            font-size: 1.5em;
-            color: var(--orange);
-            opacity: 0.3;
+            top: 20px;
+            right: 20px;
+            font-size: 1.3em;
+            color: var(--white);
+            opacity: 0.2;
             font-weight: 700;
         }
 
         .flight-row.departing::after {
             content: '↑';
             position: absolute;
-            top: 28px;
-            right: 28px;
-            font-size: 1.5em;
-            color: var(--orange);
-            opacity: 0.3;
+            top: 20px;
+            right: 20px;
+            font-size: 1.3em;
+            color: var(--white);
+            opacity: 0.2;
             font-weight: 700;
         }
 
         .flight-header {
             display: flex;
-            gap: 20px;
+            gap: 16px;
             align-items: flex-start;
         }
 
         .flight-photo {
-            width: 120px;
-            height: 90px;
-            object-fit: cover;
-            border-radius: 12px;
-            background: var(--gray-100);
+            width: 100px;
+            height: 75px;
+            object-fit: contain;
+            border-radius: 8px;
+            background: rgba(0, 0, 0, 0.3);
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 3em;
-            border: 1px solid var(--gray-200);
+            font-size: 2.5em;
+            border: 1px solid var(--gray-200-alpha);
             flex-shrink: 0;
+        }
+
+        .flight-photo img {
+            object-fit: contain !important;
         }
 
         .flight-info {
@@ -217,16 +314,16 @@
         }
 
         .flight-number {
-            font-size: 1.75em;
+            font-size: 1.5em;
             font-weight: 700;
-            color: var(--navy-900);
+            color: var(--white);
             letter-spacing: -0.5px;
             line-height: 1;
         }
 
         .flight-airline {
-            font-size: 0.9em;
-            color: var(--gray-600);
+            font-size: 0.8em;
+            color: var(--white-semi);
             font-weight: 500;
             text-transform: uppercase;
             letter-spacing: 0.5px;
@@ -234,7 +331,7 @@
 
         .flight-route {
             font-size: 1.1em;
-            color: var(--navy-800);
+            color: var(--white);
             font-weight: 600;
             margin-top: 4px;
             display: flex;
@@ -242,34 +339,123 @@
             gap: 8px;
         }
 
-        .flight-meta {
+        .flight-details {
             display: flex;
-            justify-content: space-between;
-            align-items: center;
+            flex-direction: column;
+            gap: 12px;
             padding-top: 16px;
-            border-top: 1px solid var(--gray-200);
+            border-top: 1px solid var(--gray-200-alpha);
         }
 
-        .flight-times {
+        .flight-aircraft {
+            font-size: 0.85em;
+            color: var(--white-semi);
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .flight-aircraft-type {
+            color: var(--white);
+            font-weight: 600;
+            margin-left: 0;
+        }
+
+        .flight-airports {
+            display: grid;
+            grid-template-columns: 1fr auto 1fr;
+            gap: 16px;
+            align-items: center;
+            background: rgba(0, 0, 0, 0.2);
+            padding: 12px;
+            border-radius: 6px;
+        }
+
+        .airport-info {
             display: flex;
             flex-direction: column;
             gap: 4px;
+            min-width: 0;
         }
 
-        .time-row {
-            font-size: 0.85em;
-            color: var(--gray-600);
+        .airport-info.destination {
+            text-align: right;
+        }
+
+        .airport-code {
+            font-size: 1.2em;
+            font-weight: 700;
+            color: var(--white);
+            letter-spacing: 0.5px;
+            line-height: 1.2;
+        }
+
+        .airport-city {
+            font-size: 0.75em;
+            color: var(--white-semi);
             font-weight: 500;
+            line-height: 1.3;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .flight-arrow {
+            font-size: 1.8em;
+            color: var(--white);
+            opacity: 0.6;
+        }
+
+        .flight-times {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 12px;
+        }
+
+        .time-block {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            background: rgba(0, 0, 0, 0.15);
+            padding: 8px 10px;
+            border-radius: 4px;
         }
 
         .time-label {
-            color: var(--gray-600);
-            margin-right: 6px;
+            font-size: 0.7em;
+            color: var(--white-semi);
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+            font-weight: 600;
+            line-height: 1.2;
+            white-space: nowrap;
         }
 
         .time-value {
-            color: var(--navy-900);
-            font-weight: 600;
+            font-size: 1em;
+            color: var(--white);
+            font-weight: 700;
+            line-height: 1;
+        }
+        
+        .time-value.crossed-out {
+            text-decoration: line-through;
+            opacity: 0.6;
+            color: var(--white-semi);
+        }
+        
+        .merged-time-block {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+        
+        .time-value-container {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
         }
 
         .status-badge {
@@ -285,128 +471,70 @@
         }
 
         .footer {
-            background: var(--navy-900);
+            background: var(--darker-blue);
             color: var(--white);
-            padding: 48px 40px 32px;
-            margin-top: 0;
-        }
-
-        .footer-content {
-            max-width: 1200px;
-            margin: 0 auto;
+            padding: 16px 40px;
+            height: 60px;
             display: flex;
-            justify-content: space-between;
             align-items: center;
-            flex-wrap: wrap;
-            gap: 24px;
-        }
-
-        .footer-info {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-        }
-
-        .footer-title {
-            font-size: 1.1em;
-            font-weight: 700;
-            color: var(--orange);
-            letter-spacing: -0.3px;
-        }
-
-        .footer-text {
-            font-size: 0.9em;
-            color: rgba(255, 255, 255, 0.7);
-            font-weight: 400;
-        }
-
-        .footer-links {
-            display: flex;
-            gap: 24px;
-            align-items: center;
-        }
-
-        .footer-link {
-            color: rgba(255, 255, 255, 0.7);
-            text-decoration: none;
-            font-size: 0.9em;
-            font-weight: 500;
-            transition: color 0.2s ease;
-        }
-
-        .footer-link:hover {
-            color: var(--orange);
-        }
-
-        .footer-divider {
-            width: 100%;
-            height: 1px;
-            background: rgba(255, 255, 255, 0.1);
-            margin: 24px 0 16px;
-        }
-
-        .footer-bottom {
-            text-align: center;
-            font-size: 0.85em;
-            color: rgba(255, 255, 255, 0.5);
-            font-weight: 400;
+            justify-content: center;
+            flex-shrink: 0;
+            border-top: 1px solid var(--gray-200-alpha);
         }
 
         .footer-update {
             text-align: center;
-            padding: 12px;
-            background: rgba(255, 255, 255, 0.05);
-            border-radius: 8px;
-            margin-bottom: 24px;
         }
 
         .footer-update-label {
-            font-size: 0.75em;
-            color: rgba(255, 255, 255, 0.5);
+            font-size: 0.7em;
+            color: var(--white-semi);
             text-transform: uppercase;
             letter-spacing: 0.5px;
-            margin-bottom: 4px;
+            margin-bottom: 2px;
         }
 
         .footer-update-time {
-            font-size: 0.9em;
-            color: var(--orange);
+            font-size: 0.85em;
+            color: var(--white);
             font-weight: 600;
         }
 
         .no-flights {
             text-align: center;
-            padding: 80px 40px;
-            background: var(--white);
-            border-radius: 16px;
-            border: 2px dashed var(--gray-200);
+            padding: 60px 30px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 8px;
+            border: 2px dashed var(--gray-200-alpha);
         }
 
         .plane-icon {
-            font-size: 4em;
-            margin-bottom: 20px;
+            font-size: 3em;
+            margin-bottom: 16px;
             opacity: 0.3;
         }
 
         .no-flights-title {
-            font-size: 1.5em;
+            font-size: 1.3em;
             font-weight: 700;
-            color: var(--navy-900);
+            color: var(--white);
             margin-bottom: 8px;
         }
 
         .no-flights-text {
-            font-size: 1em;
-            color: var(--gray-600);
+            font-size: 0.9em;
+            color: var(--white-semi);
         }
 
         .map-container {
             width: 100%;
-            height: 600px;
-            border-radius: 12px;
+            flex: 1;
+            border-radius: 0;
             overflow: hidden;
-            border: 1px solid var(--gray-200);
-            background: var(--gray-100);
+            border: none;
+            background: var(--dark-blue);
+            position: relative;
+            box-shadow: none;
         }
 
         .map-container iframe {
@@ -415,116 +543,245 @@
             border: 0;
         }
 
-        .metar-container {
-            width: 100%;
-            min-height: 435px;
+        /* Block FlightRadar24 app store badges with overlay */
+        .map-badges-blocker {
+            position: absolute;
+            bottom: 10px;
+            right: 10px;
+            width: 140px;
+            height: 100px;
+            background: var(--primary-blue);
+            z-index: 100;
+            pointer-events: none;
         }
 
-        @media (max-width: 1400px) {
-            .three-column-layout {
-                grid-template-columns: 350px 1fr 380px;
+        .metar-container {
+            width: 100%;
+            flex: 1;
+            position: relative;
+            background: transparent;
+            border-radius: 0;
+            overflow: visible;
+            border: none;
+            box-shadow: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            pointer-events: none;
+        }
+
+        .metar-container * {
+            pointer-events: auto;
+        }
+
+        .metar-container a {
+            display: block !important;
+            width: 100% !important;
+            height: 100% !important;
+            max-width: 320px !important;
+        }
+
+        .metar-container iframe {
+            width: 100% !important;
+            height: 100% !important;
+            max-width: 320px !important;
+            border: 0;
+            filter: none !important;
+            opacity: 1 !important;
+            transition: none !important;
+        }
+        
+        .metar-container:hover {
+            filter: none !important;
+            opacity: 1 !important;
+        }
+        
+        .metar-container * {
+            filter: none !important;
+            opacity: 1 !important;
+            transition: none !important;
+        }
+
+        @media (max-width: 1600px) {
+            .dashboard-container {
+                grid-template-columns: 25% 40% 35%;
             }
         }
 
         @media (max-width: 1200px) {
-            .three-column-layout {
+            .dashboard-container {
                 grid-template-columns: 1fr;
-                gap: 30px;
+                grid-template-rows: auto auto auto auto;
+            }
+
+            .weather-panel,
+            .map-panel,
+            .flights-panel {
+                border: none;
+                padding: 20px;
+            }
+
+            .flights-panel {
+                grid-column: 1;
+                grid-row: 1;
+                border-bottom: 1px solid var(--gray-200-alpha);
+            }
+
+            .map-panel {
+                grid-column: 1;
+                grid-row: 2;
+                border-bottom: 1px solid var(--gray-200-alpha);
+            }
+
+            .weather-panel {
+                grid-column: 1;
+                grid-row: 3;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .main-section {
+                height: auto;
+                min-height: 100vh;
+            }
+
+            .dashboard-container {
+                height: auto;
+            }
+
+            .weather-panel,
+            .map-panel,
+            .flights-panel {
+                padding: 15px;
+                height: auto;
+            }
+
+            .flights-panel {
+                min-height: 400px;
             }
 
             .map-container {
                 height: 400px;
             }
-        }
 
-        @media (max-width: 768px) {
-            header {
-                padding: 30px 24px;
+            .metar-container {
+                height: 500px;
             }
 
-            h1 {
-                font-size: 2em;
-            }
-
-            .main-section {
-                padding: 30px 24px;
-            }
-
-            .map-container {
-                height: 300px;
+            .metar-container a,
+            .metar-container iframe {
+                max-width: 280px !important;
             }
 
             .flight-row {
-                padding: 20px;
+                padding: 16px;
             }
 
             .flight-header {
-                gap: 16px;
+                gap: 12px;
             }
 
             .flight-photo {
-                width: 90px;
-                height: 68px;
+                width: 80px;
+                height: 60px;
             }
 
             .flight-number {
-                font-size: 1.4em;
+                font-size: 1.3em;
             }
 
-            .flight-route {
-                font-size: 1em;
+            .flight-airline {
+                font-size: 0.8em;
             }
 
-            .flight-meta {
-                flex-direction: column;
-                align-items: flex-start;
-                gap: 12px;
+            .airport-code {
+                font-size: 1.1em;
+            }
+
+            .airport-city {
+                font-size: 0.7em;
+            }
+
+            .flight-times {
+                grid-template-columns: 1fr 1fr;
+                gap: 8px;
+            }
+
+            .time-label {
+                font-size: 0.65em;
+            }
+
+            .time-value {
+                font-size: 0.85em;
             }
 
             .footer {
-                padding: 36px 24px 24px;
+                padding: 12px 20px;
+                height: 60px;
             }
 
-            .footer-content {
-                flex-direction: column;
-                align-items: flex-start;
+            .footer-update-label {
+                font-size: 0.65em;
             }
 
-            .footer-links {
-                flex-direction: column;
-                align-items: flex-start;
-                gap: 12px;
+            .footer-update-time {
+                font-size: 0.75em;
+            }
+
+            .upcoming-container {
+                max-height: 400px;
+            }
+
+            .upcoming-row {
+                padding: 10px 12px;
+            }
+
+            .upcoming-flight-number {
+                font-size: 1em;
+            }
+
+            .upcoming-route {
+                font-size: 0.7em;
+            }
+
+            .upcoming-eta {
+                font-size: 1.1em;
             }
         }
     </style>
 </head>
 <body>
-    <header>
-        <div class="hero-content">
-            <h1>sk<span class="hero-accent">ITQ</span></h1>
-        </div>
-    </header>
-
     <div class="main-section">
-        <div class="three-column-layout">
-            <div class="column">
-                <h2 class="section-title">Weather (EDDL)</h2>
-                <div class="metar-container">
-                    <a href="https://metar-taf.com/metar/EDDL" id="metartaf-VWtmRhzL" style="font-size:18px; font-weight:500; color:#000; width:100%; height:435px; display:block">METAR Düsseldorf Airport</a>
-                    <script async defer crossorigin="anonymous" src="https://metar-taf.com/embed-js/EDDL?qnh=hPa&rh=rh&target=VWtmRhzL"></script>
+        <div class="dashboard-container">
+            <div class="weather-panel">
+                <div class="column">
+                    <h2 class="section-title">Weather (EDDL)</h2>
+                    <div class="metar-container">
+                        <a href="https://metar-taf.com/metar/EDDL" id="metartaf-VWtmRhzL" style="font-size:18px; font-weight:500; color:#000; width:100%; height:100%; max-width:320px; display:block">METAR Düsseldorf Airport</a>
+                        <script async defer crossorigin="anonymous" src="https://metar-taf.com/embed-js/EDDL?qnh=hPa&rh=rh&target=VWtmRhzL"></script>
+                    </div>
+                    <h2 class="section-title" style="margin-top: 20px;">Out of View Planes</h2>
+                    <div class="upcoming-container" id="westbound-container">
+                    </div>
                 </div>
             </div>
 
-            <div class="column">
+            <div class="map-panel">
                 <h2 class="section-title">Live Map</h2>
                 <div class="map-container">
                     <iframe src="https://www.flightradar24.com/simple_index.php?lat=51.303&lon=6.81&z=14" allowfullscreen></iframe>
+                    <div class="map-badges-blocker"></div>
                 </div>
             </div>
 
-            <div class="column">
-                <h2 class="section-title">Active Flights</h2>
-                <div class="flights-container" id="flights-container">
+            <div class="flights-panel">
+                <div class="column">
+                    <h2 class="section-title">Visible Planes</h2>
+                    <div class="flights-container" id="flights-container">
+                    </div>
+                    <h2 class="section-title" style="margin-top: 20px;">Upcoming</h2>
+                    <div class="upcoming-container" id="upcoming-container">
+                    </div>
                 </div>
             </div>
         </div>
@@ -534,19 +791,6 @@
         <div class="footer-update">
             <div class="footer-update-label">Last Updated</div>
             <div class="footer-update-time" id="global-last-update">Initializing...</div>
-        </div>
-        <div class="footer-content">
-            <div class="footer-info">
-                <div class="footer-title">skITQ</div>
-            </div>
-            <div class="footer-links">
-                <a href="https://www.flightradar24.com" target="_blank" class="footer-link">FlightRadar24</a>
-                <a href="https://www.planespotters.net" target="_blank" class="footer-link">Planespotters</a>
-            </div>
-        </div>
-        <div class="footer-divider"></div>
-        <div class="footer-bottom">
-            Data powered by FlightRadar24 • Photos by Planespotters
         </div>
     </footer>
 
@@ -594,28 +838,109 @@
 
         // Cache for FR24 flight data
         let fr24FlightData = [];
+        let upcomingFlightData = [];
+        let westboundDeparturesData = [];
         let lastFR24Fetch = 0;
+        let lastDataUpdateTime = 0;
+        
+        // ATIS and DUS Airport API for upcoming flights
+        let activeRunways = { arrivals: [], departures: [] };
+        let lastATISFetch = 0;
+        let dusUpcomingFlights = [];
+
+        // Viewing area bounds - smaller area focused on eastern runway approach
+        const VIEW_BOUNDS = {
+            north: 51.320,
+            south: 51.290,
+            west: 6.820,
+            east: 6.900
+        };
+
+        // Expanded search area (about 10km radius)
+        const SEARCH_BOUNDS = {
+            north: VIEW_BOUNDS.north + 0.09,  // ~10km
+            south: VIEW_BOUNDS.south - 0.09,
+            west: VIEW_BOUNDS.west - 0.12,
+            east: VIEW_BOUNDS.east + 0.12
+        };
+
+        // Check if plane is in viewing area
+        function isInViewingArea(lat, lon) {
+            return lat >= VIEW_BOUNDS.south && lat <= VIEW_BOUNDS.north &&
+                   lon >= VIEW_BOUNDS.west && lon <= VIEW_BOUNDS.east;
+        }
+
+        // Calculate distance in km between two coordinates
+        function calculateDistance(lat1, lon1, lat2, lon2) {
+            const R = 6371; // Earth's radius in km
+            const dLat = (lat2 - lat1) * Math.PI / 180;
+            const dLon = (lon2 - lon1) * Math.PI / 180;
+            const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                     Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                     Math.sin(dLon/2) * Math.sin(dLon/2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+            return R * c;
+        }
+
+        // Check if plane is heading towards viewing area based on heading and position
+        function isHeadingTowardsViewingArea(lat, lon, heading) {
+            const centerLat = (VIEW_BOUNDS.north + VIEW_BOUNDS.south) / 2;
+            const centerLon = (VIEW_BOUNDS.east + VIEW_BOUNDS.west) / 2;
+            
+            // Calculate bearing from plane to viewing area center
+            const dLon = (centerLon - lon) * Math.PI / 180;
+            const lat1 = lat * Math.PI / 180;
+            const lat2 = centerLat * Math.PI / 180;
+            
+            const y = Math.sin(dLon) * Math.cos(lat2);
+            const x = Math.cos(lat1) * Math.sin(lat2) - Math.sin(lat1) * Math.cos(lat2) * Math.cos(dLon);
+            const bearing = Math.atan2(y, x) * 180 / Math.PI;
+            const normalizedBearing = (bearing + 360) % 360;
+            
+            // Normalize heading
+            const normalizedHeading = (heading + 360) % 360;
+            
+            // Check if heading is roughly towards the viewing area (within 90 degrees for earlier detection)
+            const headingDiff = Math.abs(normalizedHeading - normalizedBearing);
+            const minDiff = Math.min(headingDiff, 360 - headingDiff);
+            
+            return minDiff < 90; // Within 90 degrees of correct direction (wider tolerance for earlier detection)
+        }
+
+        // Calculate ETA to viewing area center (only if heading towards it)
+        function calculateETA(lat, lon, heading, groundSpeed) {
+            // First check if plane is heading towards viewing area
+            if (!isHeadingTowardsViewingArea(lat, lon, heading)) {
+                return null;
+            }
+            
+            const centerLat = (VIEW_BOUNDS.north + VIEW_BOUNDS.south) / 2;
+            const centerLon = (VIEW_BOUNDS.east + VIEW_BOUNDS.west) / 2;
+
+            const distance = calculateDistance(lat, lon, centerLat, centerLon);
+
+            // Convert knots to km/h and calculate time in minutes
+            const speedKmh = groundSpeed * 1.852;
+            if (speedKmh === 0) return null;
+
+            const timeHours = distance / speedKmh;
+            const timeMinutes = Math.round(timeHours * 60);
+
+            return timeMinutes > 0 && timeMinutes < 120 ? timeMinutes : null; // Extended to 120 minutes for earlier display
+        }
 
         // Fetch live flights from FlightRadar24 feed.js API
         async function fetchFlightRadar24Data() {
             try {
-                // User's exact viewing area (northeast office view)
-                // Southwest: 51.289748, 6.782513
-                // Northeast: 51.338119, 6.877785
-                const north = 51.338119;
-                const south = 51.289748;
-                const west = 6.782513;
-                const east = 6.877785;
-
                 // FR24 feed.js API - bounds format: north,south,west,east
-                const bounds = `${north},${south},${west},${east}`;
+                const bounds = `${SEARCH_BOUNDS.north},${SEARCH_BOUNDS.south},${SEARCH_BOUNDS.west},${SEARCH_BOUNDS.east}`;
                 const apiUrl = `https://data-cloud.flightradar24.com/zones/fcgi/feed.js?bounds=${bounds}&faa=1&satellite=1&mlat=1&flarm=1&adsb=1&gnd=1&air=1&vehicles=0&estimated=1&maxage=14400&gliders=0&stats=0`;
 
                 // Use CORS proxy to avoid CORS blocking
                 const proxyUrl = 'https://corsproxy.io/?';
                 const url = proxyUrl + encodeURIComponent(apiUrl);
 
-                console.log(`Fetching FR24 feed data for viewing area: ${bounds}`);
+                console.log(`Fetching FR24 feed data for expanded search area: ${bounds}`);
                 console.log(`Using CORS proxy: ${proxyUrl}`);
                 const response = await fetch(url);
 
@@ -653,10 +978,67 @@
                         flights.push(flightData);
                     }
 
-                    console.log(`FR24: Found ${flights.length} flights in viewing area`);
-                    fr24FlightData = flights;
+                    // Filter to only DUS flights (arriving or departing)
+                    const dusFlights = flights.filter(flight => {
+                        return flight.origin_iata === 'DUS' || flight.destination_iata === 'DUS';
+                    });
+
+                    // Separate into visible, westbound departures, and upcoming
+                    const visibleFlights = [];
+                    const westboundDepartures = [];
+                    const upcoming = [];
+                    const visibleFlightIds = new Set();
+
+                    dusFlights.forEach(flight => {
+                        const isDeparture = flight.origin_iata === 'DUS';
+                        const isArrival = flight.destination_iata === 'DUS';
+                        
+                        if (isInViewingArea(flight.latitude, flight.longitude)) {
+                            visibleFlights.push(flight);
+                            visibleFlightIds.add(flight.id);
+                        } else if (isDeparture && !flight.on_ground) {
+                            // Check if heading west (heading between 180-360 degrees, roughly 225-315 for west)
+                            // Heading 270 is west, so we want heading between 225 and 315
+                            const heading = flight.heading || 0;
+                            const isHeadingWest = heading >= 225 && heading <= 315;
+                            
+                            if (isHeadingWest) {
+                                westboundDepartures.push(flight);
+                            } else {
+                                // Departures heading east can appear in upcoming
+                                const eta = calculateETA(flight.latitude, flight.longitude, flight.heading, flight.ground_speed);
+                                // Include flights up to 120 minutes away for earlier display
+                                if (eta !== null && eta < 120) {
+                                    flight.eta = eta;
+                                    upcoming.push(flight);
+                                }
+                            }
+                        } else if (isArrival && !flight.on_ground) {
+                            // Arrivals not in viewing area - add to upcoming
+                            if (!visibleFlightIds.has(flight.id)) {
+                                const eta = calculateETA(flight.latitude, flight.longitude, flight.heading, flight.ground_speed);
+                                // Include flights up to 120 minutes away for earlier display
+                                if (eta !== null && eta < 120) {
+                                    flight.eta = eta;
+                                    upcoming.push(flight);
+                                }
+                            }
+                        }
+                        // Don't add on-ground flights to upcoming - they won't be visible until they take off
+                    });
+
+                    console.log(`FR24: Found ${visibleFlights.length} visible flights, ${westboundDepartures.length} westbound departures, ${upcoming.length} upcoming flights`);
+                    fr24FlightData = visibleFlights;
+                    westboundDeparturesData = westboundDepartures.sort((a, b) => {
+                        // Sort by distance to viewing area (closer first)
+                        const aDist = calculateDistance(a.latitude, a.longitude, (VIEW_BOUNDS.north + VIEW_BOUNDS.south) / 2, (VIEW_BOUNDS.east + VIEW_BOUNDS.west) / 2);
+                        const bDist = calculateDistance(b.latitude, b.longitude, (VIEW_BOUNDS.north + VIEW_BOUNDS.south) / 2, (VIEW_BOUNDS.east + VIEW_BOUNDS.west) / 2);
+                        return aDist - bDist;
+                    });
+                    upcomingFlightData = upcoming.sort((a, b) => a.eta - b.eta);
                     lastFR24Fetch = Date.now();
-                    return flights;
+                    lastDataUpdateTime = Date.now();
+                    return visibleFlights;
                 }
 
                 console.log('FR24: Failed to fetch feed data');
@@ -727,11 +1109,17 @@
         async function displayFlights() {
             const container = document.getElementById('flights-container');
 
+            // Update timestamp regardless of flight data
+            const now = new Date();
+            const timeStr = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
+            const dateStr = now.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+            document.getElementById('global-last-update').textContent = `${dateStr} at ${timeStr}`;
+
             if (!fr24FlightData || fr24FlightData.length === 0) {
                 container.innerHTML = `
                     <div class="no-flights">
                         <div class="plane-icon">✈️</div>
-                        <div class="no-flights-title">No Active Flights</div>
+                        <div class="no-flights-title">No Visible Planes</div>
                         <div class="no-flights-text">Scanning for aircraft in the viewing area...</div>
                     </div>
                 `;
@@ -740,9 +1128,34 @@
 
             console.log(`Processing ${fr24FlightData.length} flights for display`);
 
+            // Filter to only DUS flights (should already be filtered, but double-check)
+            // Also check if any upcoming flights have now entered the viewing area
+            const dusOnlyFlights = fr24FlightData.filter(flight => {
+                return flight.origin_iata === 'DUS' || flight.destination_iata === 'DUS';
+            });
+            
+            // Check if any upcoming flights are now visible and add them to visible if not already there
+            if (upcomingFlightData && upcomingFlightData.length > 0) {
+                upcomingFlightData.forEach(upcomingFlight => {
+                    if (isInViewingArea(upcomingFlight.latitude, upcomingFlight.longitude)) {
+                        // Check if this flight is already in the visible list
+                        const alreadyVisible = dusOnlyFlights.some(visibleFlight =>
+                            visibleFlight.id === upcomingFlight.id ||
+                            (visibleFlight.flight_number === upcomingFlight.flight_number &&
+                             visibleFlight.origin_iata === upcomingFlight.origin_iata &&
+                             visibleFlight.destination_iata === upcomingFlight.destination_iata)
+                        );
+                        // If not already visible, add it (it will be processed in the next fetch cycle)
+                        if (!alreadyVisible && (upcomingFlight.origin_iata === 'DUS' || upcomingFlight.destination_iata === 'DUS')) {
+                            dusOnlyFlights.push(upcomingFlight);
+                        }
+                    }
+                });
+            }
+
             // Fetch details for each flight and enrich data
             const enrichedFlights = await Promise.all(
-                fr24FlightData.map(async (flight) => {
+                dusOnlyFlights.map(async (flight) => {
                     const details = await fetchFlightDetails(flight.id);
 
                     return {
@@ -789,17 +1202,37 @@
                     countryFlag = getCountryFlag(country);
                 }
 
-                // Format times
-                let timesHtml = '';
-                if (flight.scheduled_time) {
-                    const scheduled = new Date(flight.scheduled_time * 1000).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
-                    timesHtml += `<div class="time-row"><span class="time-label">Scheduled:</span><span class="time-value">${scheduled}</span></div>`;
+                // Get comprehensive flight details
+                const details = flight.details;
+                const aircraftType = details?.aircraft?.model?.code || flight.aircraft_code || '';
+                const registration = flight.registration || '';
 
-                    if (flight.estimated_time && flight.estimated_time !== flight.scheduled_time) {
-                        const estimated = new Date(flight.estimated_time * 1000).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
-                        timesHtml += `<div class="time-row"><span class="time-label">Expected:</span><span class="time-value">${estimated}</span></div>`;
-                    }
-                }
+                // Origin info
+                const originCode = flight.origin_iata || '';
+                const originCity = flight.origin_city || flight.origin_name || '';
+                const originCountry = flight.origin_country || '';
+                const originFlag = getCountryFlag(originCountry);
+
+                // Destination info
+                const destCode = flight.destination_iata || '';
+                const destCity = flight.destination_city || flight.destination_name || '';
+                const destCountry = flight.destination_country || '';
+                const destFlag = getCountryFlag(destCountry);
+
+                // Time formatting
+                const formatTime = (timestamp) => {
+                    if (!timestamp) return '';
+                    return new Date(timestamp * 1000).toLocaleTimeString('en-US', {
+                        hour: '2-digit',
+                        minute: '2-digit',
+                        hour12: false
+                    });
+                };
+
+                const scheduledDep = details?.time?.scheduled?.departure || 0;
+                const actualDep = details?.time?.real?.departure || 0;
+                const scheduledArr = details?.time?.scheduled?.arrival || 0;
+                const estimatedArr = details?.time?.estimated?.arrival || 0;
 
                 const rowId = `flight-${flight.flight_number?.replace(/\s/g, '-') || flight.id}`;
                 const photoId = `${rowId}-photo`;
@@ -811,23 +1244,62 @@
                             <div class="flight-info">
                                 <div class="flight-number">${flight.flight_number || flight.callsign || 'Unknown'}</div>
                                 ${flight.airline_name ? `<div class="flight-airline">${flight.airline_name}</div>` : ''}
-                                <div class="flight-route">
-                                    <span>${countryFlag}</span>
-                                    <span>${locationLabel} ${location}</span>
-                                </div>
                             </div>
                         </div>
-                        ${timesHtml ? `
-                            <div class="flight-meta">
-                                <div class="flight-times">${timesHtml}</div>
-                                <div class="status-badge">${flightStatus}</div>
+
+                        <div class="flight-details">
+                            ${aircraftType || registration ? `
+                                <div class="flight-aircraft">
+                                    ✈️ ${registration ? `${registration}` : ''}
+                                    ${aircraftType ? `<span class="flight-aircraft-type">${aircraftType}</span>` : ''}
+                                </div>
+                            ` : ''}
+
+                            <div class="flight-airports">
+                                <div class="airport-info">
+                                    <div class="airport-code">${originFlag ? `${originFlag} ` : ''}${originCode}</div>
+                                    <div class="airport-city">${originCity}</div>
+                                </div>
+                                <div class="flight-arrow">✈</div>
+                                <div class="airport-info destination">
+                                    <div class="airport-code">${destFlag ? `${destFlag} ` : ''}${destCode}</div>
+                                    <div class="airport-city">${destCity}</div>
+                                </div>
                             </div>
-                        ` : `
-                            <div class="flight-meta">
-                                <div></div>
-                                <div class="status-badge">${flightStatus}</div>
+
+                            <div class="flight-times">
+                                ${(scheduledDep || actualDep || scheduledArr || estimatedArr) ? `
+                                    <div class="merged-time-block">
+                                        ${(scheduledDep || actualDep) ? `
+                                            <div class="time-block">
+                                                <div class="time-label">🛫 Departure</div>
+                                                <div class="time-value-container">
+                                                    ${actualDep ? `
+                                                        <div class="time-value">${formatTime(actualDep)}</div>
+                                                        ${scheduledDep && scheduledDep !== actualDep ? `<div class="time-value crossed-out" style="font-size: 0.85em;">${formatTime(scheduledDep)}</div>` : ''}
+                                                    ` : scheduledDep ? `
+                                                        <div class="time-value">${formatTime(scheduledDep)}</div>
+                                                    ` : ''}
+                                                </div>
+                                            </div>
+                                        ` : ''}
+                                        ${(scheduledArr || estimatedArr) ? `
+                                            <div class="time-block">
+                                                <div class="time-label">🛬 Arrival</div>
+                                                <div class="time-value-container">
+                                                    ${estimatedArr ? `
+                                                        <div class="time-value">${formatTime(estimatedArr)}</div>
+                                                        ${scheduledArr && scheduledArr !== estimatedArr ? `<div class="time-value crossed-out" style="font-size: 0.85em;">${formatTime(scheduledArr)}</div>` : ''}
+                                                    ` : scheduledArr ? `
+                                                        <div class="time-value">${formatTime(scheduledArr)}</div>
+                                                    ` : ''}
+                                                </div>
+                                            </div>
+                                        ` : ''}
+                                    </div>
+                                ` : ''}
                             </div>
-                        `}
+                        </div>
                     </div>
                 `;
             }).join('');
@@ -842,33 +1314,471 @@
                         const rowId = `flight-${flight.flight_number?.replace(/\s/g, '-') || flight.id}`;
                         const photoElement = document.getElementById(`${rowId}-photo`);
                         if (photoElement) {
-                            photoElement.innerHTML = `<img src="${photoUrl}" alt="${flight.registration}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 12px;" onerror="this.parentElement.innerHTML='✈️'">`;
+                            photoElement.innerHTML = `<img src="${photoUrl}" alt="${flight.registration}" style="width: 100%; height: 100%; object-fit: contain; border-radius: 8px;" onerror="this.parentElement.innerHTML='✈️'">`;
                         }
                     }
                 }
             });
+        }
 
-            const now = new Date();
-            const timeStr = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
-            const dateStr = now.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-            document.getElementById('global-last-update').textContent = `${dateStr} at ${timeStr}`;
+        // Fetch ATIS data to determine runway configuration
+        async function fetchATIS() {
+            try {
+                const now = Date.now();
+                // Fetch ATIS every 5 minutes
+                if (now - lastATISFetch < 300000 && lastATISFetch > 0) {
+                    return activeRunways;
+                }
+                
+                const proxyUrl = 'https://corsproxy.io/?';
+                const atisUrl = 'https://atis.guru/atis/EDDL';
+                const response = await fetch(proxyUrl + encodeURIComponent(atisUrl));
+                
+                if (!response.ok) {
+                    console.warn('ATIS fetch failed, using cached runway config');
+                    return activeRunways;
+                }
+                
+                const html = await response.text();
+                const runwayInfo = {
+                    arrivals: [],
+                    departures: []
+                };
+                
+                // Extract arrival ATIS section
+                const arrivalMatch = html.match(/Arrival ATIS[\s\S]*?<div class="atis">([\s\S]*?)<\/div>/i);
+                if (arrivalMatch) {
+                    const arrivalAtis = arrivalMatch[1];
+                    const rwyMatch = arrivalAtis.match(/RWY\s*(05[LR]?|23[LR]?)/i);
+                    if (rwyMatch) {
+                        runwayInfo.arrivals.push(rwyMatch[1].toUpperCase());
+                    }
+                }
+                
+                // Extract departure ATIS section
+                const departureMatch = html.match(/Departure ATIS[\s\S]*?<div class="atis">([\s\S]*?)<\/div>/i);
+                if (departureMatch) {
+                    const departureAtis = departureMatch[1];
+                    const rwyMatch = departureAtis.match(/RWY\s*(05[LR]?|23[LR]?)/i);
+                    if (rwyMatch) {
+                        runwayInfo.departures.push(rwyMatch[1].toUpperCase());
+                    }
+                }
+                
+                console.log('ATIS runway config:', runwayInfo);
+                activeRunways = runwayInfo;
+                lastATISFetch = Date.now();
+                return runwayInfo;
+            } catch (error) {
+                console.error('Error fetching ATIS:', error);
+                return activeRunways;
+            }
+        }
+        
+        // Check if arrivals are visible (runway 23)
+        function shouldFetchArrivals() {
+            if (activeRunways.arrivals.length === 0 && activeRunways.departures.length === 0) {
+                return true; // No ATIS data, fetch both
+            }
+            return activeRunways.arrivals.some(rwy => rwy.startsWith('23'));
+        }
+        
+        // Check if departures are visible (runway 05)
+        function shouldFetchDepartures() {
+            if (activeRunways.arrivals.length === 0 && activeRunways.departures.length === 0) {
+                return true; // No ATIS data, fetch both
+            }
+            return activeRunways.departures.some(rwy => rwy.startsWith('05'));
+        }
+        
+        // Filter by active status - very lenient to catch all approaching flights
+        function isActiveArrival(flight) {
+            const status = flight.status?.publicStatus?.name?.toLowerCase() || '';
+            const statusCode = flight.status?.code?.toLowerCase() || '';
+            const statusText = (status + ' ' + statusCode).trim();
+            
+            // Log statuses for debugging (only log first few to avoid spam)
+            if (flight.flightNumber && Math.random() < 0.1) {
+                console.log(`Sample arrival status: "${status}" (code: "${statusCode}") for ${flight.flightNumber}`);
+            }
+            
+            // Exclude only flights that are definitely done (landed, cancelled, etc.)
+            const excludeStatuses = ['landed', 'cancelled', 'canceled', 'diverted'];
+            const excludeCodes = ['landed', 'cancelled', 'canceled'];
+            
+            // If status indicates flight is done, exclude it
+            if (excludeStatuses.some(s => status.includes(s)) || excludeCodes.some(c => statusCode.includes(c))) {
+                return false;
+            }
+            
+            // Otherwise include it (very lenient - show all approaching, scheduled, etc.)
+            return true;
+        }
+        
+        function isActiveDeparture(flight) {
+            const status = flight.status?.publicStatus?.name?.toLowerCase() || '';
+            const statusCode = flight.status?.code?.toLowerCase() || '';
+            const statusText = (status + ' ' + statusCode).trim();
+            
+            // Log statuses for debugging (only log first few to avoid spam)
+            if (flight.flightNumber && Math.random() < 0.1) {
+                console.log(`Sample departure status: "${status}" (code: "${statusCode}") for ${flight.flightNumber}`);
+            }
+            
+            // Exclude only flights that are definitely done (departed long ago, cancelled, etc.)
+            const excludeStatuses = ['cancelled', 'canceled', 'diverted'];
+            const excludeCodes = ['cancelled', 'canceled'];
+            
+            // If status indicates flight is cancelled, exclude it
+            if (excludeStatuses.some(s => status.includes(s)) || excludeCodes.some(c => statusCode.includes(c))) {
+                return false;
+            }
+            
+            // Otherwise include it (very lenient - show all boarding, scheduled, etc.)
+            return true;
+        }
+        
+        // Fetch upcoming flights from DUS Airport API
+        async function fetchDUSUpcomingFlights() {
+            try {
+                await fetchATIS(); // Ensure we have runway config
+                
+                const arrivalUrl = 'https://www.dus.com/api/sitecore/flightapi/SearchFlightsWithOutParams?lang=en&arrival=true&offset=0&codeshare=true&showDetails=false';
+                const departureUrl = 'https://www.dus.com/api/sitecore/flightapi/SearchFlightsWithOutParams?lang=en&arrival=false&offset=0&codeshare=true&showDetails=false';
+                const proxyUrl = 'https://corsproxy.io/?';
+                const upcoming = [];
+                const allFlights = []; // Store all flights for fallback
+                
+                // Fetch arrivals if visible (runway 23)
+                if (shouldFetchArrivals()) {
+                    try {
+                        // Some CORS proxies need headers in URL, try direct fetch first
+                        const fullArrivalUrl = proxyUrl + encodeURIComponent(arrivalUrl);
+                        console.log('Fetching arrivals from DUS API with X-Requested-With header');
+                        const response = await fetch(fullArrivalUrl, {
+                            method: 'GET',
+                            headers: {
+                                'X-Requested-With': 'XMLHttpRequest'
+                            },
+                            credentials: 'omit'
+                        });
+                        
+                        console.log(`Arrivals response status: ${response.status}`);
+                        console.log(`Arrivals response headers:`, [...response.headers.entries()]);
+                        
+                        if (response.ok) {
+                            const responseText = await response.text();
+                            console.log(`Arrivals response text length: ${responseText.length}`);
+                            console.log(`Arrivals response preview: ${responseText.substring(0, 300)}`);
+                            if (responseText && !responseText.startsWith('Bad Request')) {
+                                const data = JSON.parse(responseText);
+                                const arrivals = data.data?.flights || data.Flights || data.flights || [];
+                                
+                                console.log(`Processing ${arrivals.length} arrivals from DUS API`);
+                                
+                                // Log sample flight structure for debugging
+                                if (arrivals.length > 0) {
+                                    console.log('Sample arrival flight structure:', JSON.stringify(arrivals[0], null, 2));
+                                }
+                                
+                                // First, add active arrivals
+                                const activeArrivals = arrivals.filter(isActiveArrival);
+                                console.log(`Found ${activeArrivals.length} active arrivals after filtering`);
+                                
+                                activeArrivals.forEach(flight => {
+                                    const timeStr = flight.actualTime || flight.estimatedTime || flight.scheduledTime;
+                                    const time = timeStr ? new Date(timeStr) : null;
+                                    if (time) {
+                                        const now = new Date();
+                                        // Allow flights up to 30 minutes in the past (recently landed) or future
+                                        const minutesAway = Math.round((time - now) / 60000);
+                                        if (minutesAway > -30 && minutesAway < 120) {
+                                            upcoming.push({
+                                                flight_number: (flight.flightNumber || '').trim(),
+                                                origin_iata: flight.destination?.iataCode || '',
+                                                destination_iata: 'DUS',
+                                                eta: minutesAway > 0 ? minutesAway : 0,
+                                                time: time,
+                                                isArrival: true
+                                            });
+                                        }
+                                    }
+                                });
+                                
+                                // Store all arrivals for fallback (even if not active)
+                                arrivals.forEach(flight => {
+                                    const timeStr = flight.actualTime || flight.estimatedTime || flight.scheduledTime;
+                                    const time = timeStr ? new Date(timeStr) : null;
+                                    if (time) {
+                                        const now = new Date();
+                                        const minutesAway = Math.round((time - now) / 60000);
+                                        if (minutesAway > -30 && minutesAway < 240) { // Wider range for fallback
+                                            allFlights.push({
+                                                flight_number: (flight.flightNumber || '').trim(),
+                                                origin_iata: flight.destination?.iataCode || '',
+                                                destination_iata: 'DUS',
+                                                eta: minutesAway > 0 ? minutesAway : 0,
+                                                time: time,
+                                                isArrival: true
+                                            });
+                                        }
+                                    }
+                                });
+                            }
+                        }
+                    } catch (err) {
+                        console.error('Error fetching DUS arrivals:', err);
+                    }
+                }
+                
+                // Fetch departures if visible (runway 05)
+                if (shouldFetchDepartures()) {
+                    try {
+                        // Some CORS proxies need headers in URL, try direct fetch first
+                        const fullDepartureUrl = proxyUrl + encodeURIComponent(departureUrl);
+                        const response = await fetch(fullDepartureUrl, {
+                            method: 'GET',
+                            headers: {
+                                'X-Requested-With': 'XMLHttpRequest'
+                            },
+                            credentials: 'omit'
+                        });
+                        
+                        if (response.ok) {
+                            const responseText = await response.text();
+                            if (responseText && !responseText.startsWith('Bad Request')) {
+                                const data = JSON.parse(responseText);
+                                const departures = data.data?.flights || data.Flights || data.flights || [];
+                                
+                                console.log(`Processing ${departures.length} departures from DUS API`);
+                                
+                                // Log sample flight structure for debugging
+                                if (departures.length > 0) {
+                                    console.log('Sample departure flight structure:', JSON.stringify(departures[0], null, 2));
+                                }
+                                
+                                // First, add active departures
+                                const activeDepartures = departures.filter(isActiveDeparture);
+                                console.log(`Found ${activeDepartures.length} active departures after filtering`);
+                                
+                                activeDepartures.forEach(flight => {
+                                    const timeStr = flight.actualTime || flight.estimatedTime || flight.scheduledTime;
+                                    const time = timeStr ? new Date(timeStr) : null;
+                                    if (time) {
+                                        const now = new Date();
+                                        // Allow flights up to 30 minutes in the past (recently departed) or future
+                                        const minutesAway = Math.round((time - now) / 60000);
+                                        if (minutesAway > -30 && minutesAway < 120) {
+                                            upcoming.push({
+                                                flight_number: (flight.flightNumber || '').trim(),
+                                                origin_iata: 'DUS',
+                                                destination_iata: flight.destination?.iataCode || '',
+                                                eta: minutesAway > 0 ? minutesAway : 0,
+                                                time: time,
+                                                isArrival: false
+                                            });
+                                        }
+                                    }
+                                });
+                                
+                                // Store all departures for fallback (even if not active)
+                                departures.forEach(flight => {
+                                    const timeStr = flight.actualTime || flight.estimatedTime || flight.scheduledTime;
+                                    const time = timeStr ? new Date(timeStr) : null;
+                                    if (time) {
+                                        const now = new Date();
+                                        const minutesAway = Math.round((time - now) / 60000);
+                                        if (minutesAway > -30 && minutesAway < 240) { // Wider range for fallback
+                                            allFlights.push({
+                                                flight_number: (flight.flightNumber || '').trim(),
+                                                origin_iata: 'DUS',
+                                                destination_iata: flight.destination?.iataCode || '',
+                                                eta: minutesAway > 0 ? minutesAway : 0,
+                                                time: time,
+                                                isArrival: false
+                                            });
+                                        }
+                                    }
+                                });
+                            }
+                        }
+                    } catch (err) {
+                        console.error('Error fetching DUS departures:', err);
+                    }
+                }
+                
+                // If no active flights, use the closest scheduled flight from all flights
+                if (upcoming.length === 0 && allFlights.length > 0) {
+                    allFlights.sort((a, b) => a.time - b.time);
+                    const closest = allFlights[0];
+                    upcoming.push(closest);
+                    console.log(`No active flights, using closest scheduled: ${closest.flight_number} in ${closest.eta} min`);
+                }
+                
+                // Sort by time (soonest first)
+                upcoming.sort((a, b) => a.time - b.time);
+                dusUpcomingFlights = upcoming;
+                console.log(`Found ${upcoming.length} upcoming flights from DUS Airport API`);
+                return upcoming;
+            } catch (error) {
+                console.error('Error fetching DUS upcoming flights:', error);
+                return [];
+            }
+        }
+        
+        // Display upcoming flights - use DUS Airport API data
+        function displayUpcomingFlights() {
+            const container = document.getElementById('upcoming-container');
+
+            // Use DUS Airport API data for upcoming flights
+            if (!dusUpcomingFlights || dusUpcomingFlights.length === 0) {
+                container.innerHTML = `
+                    <div style="text-align: center; padding: 20px; color: var(--white-semi); font-size: 0.9em;">
+                        Scanning for next flight...
+                    </div>
+                `;
+                return;
+            }
+
+            // Filter out flights that are now visible (check if flight is in visible list)
+            const filteredUpcoming = dusUpcomingFlights.filter(dusFlight => {
+                // Check if this flight is already visible
+                return !fr24FlightData.some(visibleFlight => {
+                    const visibleFlightNumber = visibleFlight.flight_number || visibleFlight.callsign || '';
+                    const dusFlightNumber = dusFlight.flight_number || '';
+                    return visibleFlightNumber.trim() === dusFlightNumber.trim() &&
+                           visibleFlight.origin_iata === dusFlight.origin_iata &&
+                           visibleFlight.destination_iata === dusFlight.destination_iata;
+                });
+            });
+
+            if (!filteredUpcoming || filteredUpcoming.length === 0) {
+                container.innerHTML = `
+                    <div style="text-align: center; padding: 20px; color: var(--white-semi); font-size: 0.9em;">
+                        No upcoming flights
+                    </div>
+                `;
+                return;
+            }
+
+            // Show next plane (first in sorted list)
+            const nextFlight = filteredUpcoming[0];
+            if (!nextFlight) {
+                container.innerHTML = `
+                    <div style="text-align: center; padding: 20px; color: var(--white-semi); font-size: 0.9em;">
+                        Scanning for next flight...
+                    </div>
+                `;
+                return;
+            }
+
+            const flightNumber = nextFlight.flight_number || 'Unknown';
+            const route = `${nextFlight.origin_iata || '?'} ✈ ${nextFlight.destination_iata || '?'}`;
+            const eta = nextFlight.eta !== undefined ? nextFlight.eta : '?';
+
+            container.innerHTML = `
+                <div class="upcoming-row">
+                    <div class="upcoming-info">
+                        <div class="upcoming-flight-number">✈️ ${flightNumber}</div>
+                        <div class="upcoming-route">${route}</div>
+                    </div>
+                    <div style="text-align: right;">
+                        <div class="upcoming-eta">~${eta} min</div>
+                        <div class="upcoming-eta-label">⏱️ Next</div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Display westbound departures
+        function displayWestboundDepartures() {
+            const container = document.getElementById('westbound-container');
+
+            if (!westboundDeparturesData || westboundDeparturesData.length === 0) {
+                container.innerHTML = `
+                    <div style="text-align: center; padding: 20px; color: var(--white-semi); font-size: 0.9em;">
+                        No westbound departures
+                    </div>
+                `;
+                return;
+            }
+
+            const westboundHtml = westboundDeparturesData.map(flight => {
+                const flightNumber = flight.flight_number || flight.callsign || 'Unknown';
+                const route = `${flight.origin_iata || 'DUS'} ✈ ${flight.destination_iata || '?'}`;
+
+                return `
+                    <div class="upcoming-row">
+                        <div class="upcoming-info">
+                            <div class="upcoming-flight-number">✈️ ${flightNumber}</div>
+                            <div class="upcoming-route">${route}</div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            container.innerHTML = westboundHtml;
+        }
+
+        // Update timestamp display
+        function updateTimestamp() {
+            const updateElement = document.getElementById('global-last-update');
+            if (updateElement) {
+                if (lastDataUpdateTime > 0) {
+                    // Format date and time (hh:mm:ss)
+                    const updateDate = new Date(lastDataUpdateTime);
+                    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+                    const month = months[updateDate.getMonth()];
+                    const day = updateDate.getDate();
+                    const year = updateDate.getFullYear();
+                    const hours = String(updateDate.getHours()).padStart(2, '0');
+                    const minutes = String(updateDate.getMinutes()).padStart(2, '0');
+                    const seconds = String(updateDate.getSeconds()).padStart(2, '0');
+                    updateElement.textContent = `Last updated: ${month} ${day}, ${year} at ${hours}:${minutes}:${seconds}`;
+                } else {
+                    const nowDate = new Date();
+                    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+                    const month = months[nowDate.getMonth()];
+                    const day = nowDate.getDate();
+                    const year = nowDate.getFullYear();
+                    const hours = String(nowDate.getHours()).padStart(2, '0');
+                    const minutes = String(nowDate.getMinutes()).padStart(2, '0');
+                    const seconds = String(nowDate.getSeconds()).padStart(2, '0');
+                    updateElement.textContent = `Waiting for update... ${month} ${day}, ${year} at ${hours}:${minutes}:${seconds}`;
+                }
+            }
         }
 
         // Update and display flights
         async function updateAndDisplayFlights() {
             const now = Date.now();
-            // Fetch every 1 minute
-            if (now - lastFR24Fetch > 60000 || lastFR24Fetch === 0) {
+            // Fetch every minute
+            const shouldFetch = (now - lastFR24Fetch > 60000 || lastFR24Fetch === 0);
+            
+            if (shouldFetch) {
+                console.log(`Fetching new flight data (last fetch: ${Math.floor((now - lastFR24Fetch) / 1000)}s ago)`);
                 await fetchFlightRadar24Data();
-                await displayFlights();
+                await fetchDUSUpcomingFlights(); // Fetch upcoming flights from DUS Airport API
+                updateTimestamp(); // Update timestamp after fetching data
             }
+            
+            // Always update display to check for flights entering viewing area
+            await displayFlights();
+            displayUpcomingFlights();
+            displayWestboundDepartures();
         }
 
         // Initial load
         updateAndDisplayFlights();
 
-        // Refresh every 1 minute
-        setInterval(updateAndDisplayFlights, 60000);
+        // Refresh flight data and display every minute (60000ms)
+        setInterval(() => {
+            console.log('Scheduled update triggered');
+            updateAndDisplayFlights();
+        }, 60000);
+        
+        // Update timestamp after each data fetch
+        // No need to update every second since we're not showing time
     </script>
 </body>
 </html>
