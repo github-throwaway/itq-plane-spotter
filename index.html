@@ -174,19 +174,16 @@
         }
 
         .upcoming-row {
-            background: rgba(0, 0, 0, 0.2);
-            backdrop-filter: blur(5px);
-            padding: 18px 20px;
-            min-height: 70px;
-            border-radius: 10px;
-            border: 1px solid var(--gray-200-alpha);
+            background: rgba(0, 0, 0, 0.15);
+            padding: 16px 18px;
+            min-height: 65px;
+            border-radius: 6px;
             border-left: 3px solid transparent;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            transition: all 0.3s ease;
+            transition: background 0.2s ease;
             cursor: pointer;
-            position: relative;
         }
 
         .upcoming-row.arrival {
@@ -198,20 +195,7 @@
         }
 
         .upcoming-row:hover {
-            background: rgba(0, 0, 0, 0.3);
-            border-color: var(--white-semi);
-            transform: translateX(6px);
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-        }
-
-        .upcoming-row.arrival:hover {
-            border-left-color: var(--arrival-green);
-            box-shadow: 0 4px 12px var(--arrival-green-glow);
-        }
-
-        .upcoming-row.departure:hover {
-            border-left-color: var(--departure-amber);
-            box-shadow: 0 4px 12px var(--departure-amber-glow);
+            background: rgba(0, 0, 0, 0.25);
         }
 
         .upcoming-info {
@@ -251,96 +235,45 @@
         }
 
         .flight-row {
-            background: rgba(0, 0, 0, 0.25);
-            backdrop-filter: blur(10px);
-            padding: 20px;
-            border-radius: 12px;
-            transition: all 0.3s ease;
-            animation: slideIn 0.4s ease;
+            background: rgba(0, 0, 0, 0.2);
+            padding: 18px;
+            border-radius: 8px;
+            transition: background 0.2s ease;
             display: flex;
             flex-direction: column;
-            gap: 16px;
-            border: 1px solid var(--gray-200-alpha);
+            gap: 14px;
+            border-left: 3px solid transparent;
             position: relative;
-            overflow: hidden;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
         }
 
-        .flight-row::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 4px;
-            background: var(--white);
-            opacity: 0;
-            transition: all 0.3s ease;
+        .flight-row.arriving {
+            border-left-color: var(--arrival-green);
         }
 
-        .flight-row.arriving::before {
-            background: linear-gradient(90deg, var(--arrival-green) 0%, transparent 100%);
-        }
-
-        .flight-row.departing::before {
-            background: linear-gradient(90deg, var(--departure-amber) 0%, transparent 100%);
+        .flight-row.departing {
+            border-left-color: var(--departure-amber);
         }
 
         .flight-row:hover {
-            background: rgba(0, 0, 0, 0.35);
-            border-color: var(--white);
-            transform: translateY(-2px);
-            box-shadow: 0 8px 12px rgba(0, 0, 0, 0.2);
-        }
-
-        .flight-row:hover::before {
-            opacity: 1;
-        }
-
-        .flight-row.arriving:hover {
-            border-color: var(--arrival-green);
-            box-shadow: 0 8px 16px var(--arrival-green-glow);
-        }
-
-        .flight-row.departing:hover {
-            border-color: var(--departure-amber);
-            box-shadow: 0 8px 16px var(--departure-amber-glow);
-        }
-
-        @keyframes slideIn {
-            from {
-                opacity: 0;
-                transform: translateY(20px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
+            background: rgba(0, 0, 0, 0.3);
         }
 
         .flight-row.arriving::after {
             content: '🛬';
             position: absolute;
-            top: 16px;
-            right: 16px;
-            font-size: 1.5em;
-            opacity: 0.3;
-            filter: drop-shadow(0 0 8px var(--arrival-green-glow));
+            top: 18px;
+            right: 18px;
+            font-size: 1.2em;
+            opacity: 0.2;
         }
 
         .flight-row.departing::after {
             content: '🛫';
             position: absolute;
-            top: 16px;
-            right: 16px;
-            font-size: 1.5em;
-            opacity: 0.3;
-            filter: drop-shadow(0 0 8px var(--departure-amber-glow));
-        }
-
-        .flight-row.arriving:hover::after,
-        .flight-row.departing:hover::after {
-            opacity: 0.6;
+            top: 18px;
+            right: 18px;
+            font-size: 1.2em;
+            opacity: 0.2;
         }
 
         .flight-header {
@@ -375,20 +308,11 @@
         }
 
         .flight-number {
-            font-size: 1.8em;
-            font-weight: 800;
+            font-size: 1.5em;
+            font-weight: 700;
             color: var(--white);
             letter-spacing: -0.5px;
             line-height: 1;
-            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
-        }
-
-        .flight-row.arriving .flight-number {
-            color: var(--arrival-green);
-        }
-
-        .flight-row.departing .flight-number {
-            color: var(--departure-amber);
         }
 
         .flight-airline {
@@ -545,45 +469,27 @@
             display: flex;
             gap: 8px;
             flex-wrap: wrap;
-            margin-top: 8px;
+            margin-top: 6px;
         }
 
         .data-badge {
             display: inline-flex;
             align-items: center;
-            gap: 6px;
-            padding: 6px 12px;
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 8px;
-            font-size: 0.75em;
-            font-weight: 600;
-            border: 1px solid rgba(255, 255, 255, 0.15);
-            transition: all 0.2s ease;
-        }
-
-        .data-badge:hover {
-            background: rgba(255, 255, 255, 0.15);
-            transform: scale(1.05);
+            gap: 5px;
+            padding: 4px 10px;
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 4px;
+            font-size: 0.7em;
+            font-weight: 500;
         }
 
         .data-badge-icon {
-            font-size: 1.1em;
-            opacity: 0.8;
+            font-size: 1em;
+            opacity: 0.6;
         }
 
         .data-badge-value {
-            color: var(--white);
-            font-weight: 700;
-        }
-
-        .flight-row.arriving .data-badge {
-            border-color: var(--arrival-green);
-            background: rgba(16, 185, 129, 0.15);
-        }
-
-        .flight-row.departing .data-badge {
-            border-color: var(--departure-amber);
-            background: rgba(245, 158, 11, 0.15);
+            color: var(--white-semi);
         }
 
         .footer {
@@ -1339,17 +1245,27 @@
 
             console.log(`Processing ${fr24FlightData.length} flights for display`);
 
-            // Filter to only DUS flights and exclude landed planes
+            // Filter to only DUS flights that are in the viewing area and exclude landed planes
             const dusOnlyFlights = fr24FlightData.filter(flight => {
                 const isArrival = isDUSArrival(flight);
                 const isDeparture = isDUSDeparture(flight);
+
+                // Must be a DUS flight
+                if (!isArrival && !isDeparture) {
+                    return false;
+                }
 
                 // If it's an arrival to DUS and on the ground, it has landed - don't show it
                 if (isArrival && flight.on_ground) {
                     return false;
                 }
 
-                return isArrival || isDeparture;
+                // MUST be in the viewing area to show in visible planes
+                if (!isInViewingArea(flight.latitude, flight.longitude)) {
+                    return false;
+                }
+
+                return true;
             });
 
             if (upcomingFlightData?.length > 0) {
