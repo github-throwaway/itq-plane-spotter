@@ -1510,14 +1510,18 @@
 
                         // Handle data from backend (FlightRadarAPI library format)
                         if (flight.time && flight.time.scheduled) {
-                            time = new Date(flight.time.scheduled.arrival * 1000);
+                            // Use estimated time if available, otherwise use scheduled
+                            const estimatedTime = flight.time.estimated?.arrival || flight.time.real?.arrival;
+                            time = new Date((estimatedTime || flight.time.scheduled.arrival) * 1000);
                             flightNumber = flight.identification?.number?.default || flight.identification?.callsign || '';
                             originIata = flight.airport?.origin?.code?.iata || '';
                             actualArrivalTime = flight.time.real?.arrival ? new Date(flight.time.real.arrival * 1000) : null;
                         }
                         // Handle data from direct FR24 API
                         else if (flight.flight && flight.flight.time) {
-                            const schedTime = flight.flight.time.scheduled?.arrival || flight.flight.time.real?.arrival;
+                            // Use estimated time if available, otherwise use scheduled
+                            const estimatedTime = flight.flight.time.estimated?.arrival || flight.flight.time.real?.arrival;
+                            const schedTime = estimatedTime || flight.flight.time.scheduled?.arrival;
                             if (schedTime) {
                                 time = new Date(schedTime * 1000);
                                 flightNumber = flight.flight.identification?.number?.default || flight.flight.identification?.callsign || '';
@@ -1561,14 +1565,18 @@
 
                         // Handle data from backend (FlightRadarAPI library format)
                         if (flight.time && flight.time.scheduled) {
-                            time = new Date(flight.time.scheduled.departure * 1000);
+                            // Use estimated time if available, otherwise use scheduled
+                            const estimatedTime = flight.time.estimated?.departure || flight.time.real?.departure;
+                            time = new Date((estimatedTime || flight.time.scheduled.departure) * 1000);
                             flightNumber = flight.identification?.number?.default || flight.identification?.callsign || '';
                             destIata = flight.airport?.destination?.code?.iata || '';
                             actualDepartureTime = flight.time.real?.departure ? new Date(flight.time.real.departure * 1000) : null;
                         }
                         // Handle data from direct FR24 API
                         else if (flight.flight && flight.flight.time) {
-                            const schedTime = flight.flight.time.scheduled?.departure || flight.flight.time.real?.departure;
+                            // Use estimated time if available, otherwise use scheduled
+                            const estimatedTime = flight.flight.time.estimated?.departure || flight.flight.time.real?.departure;
+                            const schedTime = estimatedTime || flight.flight.time.scheduled?.departure;
                             if (schedTime) {
                                 time = new Date(schedTime * 1000);
                                 flightNumber = flight.flight.identification?.number?.default || flight.flight.identification?.callsign || '';
