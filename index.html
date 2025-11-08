@@ -1549,7 +1549,7 @@
         async function fetchDUSUpcomingFlights() {
             try {
                 await fetchATIS();
-                const upcoming = [];
+                let upcoming = [];
 
                 // Check runway configuration
                 const hasArrivalRunway = activeRunways.arrivals.length > 0;
