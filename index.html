@@ -570,6 +570,40 @@
             font-weight: 600;
         }
 
+        /* Office location pin overlay */
+        .office-pin {
+            position: absolute;
+            z-index: 50;
+            pointer-events: none;
+            transform: translate(-50%, -100%);
+            filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+        }
+
+        .office-pin-icon {
+            font-size: 2em;
+            animation: pinBounce 2s ease-in-out infinite;
+        }
+
+        .office-pin-label {
+            position: absolute;
+            bottom: -25px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--orange);
+            color: var(--white);
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.7em;
+            font-weight: 600;
+            white-space: nowrap;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        @keyframes pinBounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-5px); }
+        }
+
         .metar-container {
             width: 100%;
             flex: 1;
@@ -831,6 +865,11 @@
                 <h2 class="section-title" style="cursor: pointer;" onclick="resetMap()">Live Map</h2>
                 <div class="map-container">
                     <iframe id="map-iframe" src="https://www.flightradar24.com/simple_index.php?lat=51.305&lon=6.825&z=13" allowfullscreen></iframe>
+                    <!-- Office Location Pin -->
+                    <div class="office-pin" id="office-pin">
+                        <div class="office-pin-icon">📍</div>
+                        <div class="office-pin-label">Office</div>
+                    </div>
                     <div class="map-badges-blocker" onclick="resetMap()" style="cursor: pointer;">
                         <div class="map-stat">
                             <div class="map-stat-value" id="visible-count">0</div>
@@ -1855,6 +1894,57 @@
                 console.log('Map reset to default position');
             }
         }
+
+        // Position office pin on the map
+        function positionOfficePin() {
+            const officePin = document.getElementById('office-pin');
+            const mapContainer = document.querySelector('.map-container');
+
+            if (!officePin || !mapContainer) return;
+
+            // Office coordinates
+            const officeLat = 51.28781309211284;
+            const officeLon = 6.799248461052919;
+
+            // Map center (Düsseldorf Airport)
+            const mapCenterLat = 51.305;
+            const mapCenterLon = 6.825;
+
+            // Get map container dimensions
+            const mapWidth = mapContainer.offsetWidth;
+            const mapHeight = mapContainer.offsetHeight;
+
+            // Calculate approximate zoom 13 scale (pixels per degree)
+            // At zoom 13, approximately 256 * 2^13 / 360 pixels per degree of longitude at equator
+            // Adjusted for latitude ~51° N
+            const zoom = 13;
+            const latScale = (256 * Math.pow(2, zoom)) / 360;
+            const lonScale = latScale * Math.cos(mapCenterLat * Math.PI / 180);
+
+            // Calculate offset in degrees
+            const latDiff = mapCenterLat - officeLat; // positive = office is south
+            const lonDiff = officeLon - mapCenterLon; // negative = office is west
+
+            // Convert to pixels from center
+            const pixelX = (lonDiff * lonScale);
+            const pixelY = (latDiff * latScale);
+
+            // Position from center of map
+            const centerX = mapWidth / 2;
+            const centerY = mapHeight / 2;
+
+            const pinX = centerX + pixelX;
+            const pinY = centerY + pixelY;
+
+            officePin.style.left = pinX + 'px';
+            officePin.style.top = pinY + 'px';
+
+            console.log(`Office pin positioned at ${pinX}px, ${pinY}px (${officeLat}, ${officeLon})`);
+        }
+
+        // Position pin on page load and window resize
+        window.addEventListener('load', positionOfficePin);
+        window.addEventListener('resize', positionOfficePin);
 
         // Display upcoming flights from DUS Airport API
         function displayUpcomingFlights() {
