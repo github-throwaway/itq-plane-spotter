@@ -1007,15 +1007,15 @@
                             console.log(`Local API: Received ${flights.length} flights`);
                         } else {
                             console.warn('Local API returned error, falling back to direct API');
-                            return await fetchFlightRadar24DataDirect();
+                            flights = await fetchFlightRadar24DataDirect();
                         }
                     } catch (err) {
                         console.warn('Local API unavailable, falling back to direct API:', err.message);
-                        return await fetchFlightRadar24DataDirect();
+                        flights = await fetchFlightRadar24DataDirect();
                     }
                 } else {
                     // Use direct API with CORS proxy
-                    return await fetchFlightRadar24DataDirect();
+                    flights = await fetchFlightRadar24DataDirect();
                 }
 
                 // Filter flights based on runway configuration
