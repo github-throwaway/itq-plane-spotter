@@ -1222,8 +1222,18 @@
 
             console.log(`Processing ${fr24FlightData.length} flights for display`);
 
-            // Filter to only DUS flights and check if any upcoming flights are now visible
-            const dusOnlyFlights = fr24FlightData.filter(flight => isDUSArrival(flight) || isDUSDeparture(flight));
+            // Filter to only DUS flights and exclude landed planes
+            const dusOnlyFlights = fr24FlightData.filter(flight => {
+                const isArrival = isDUSArrival(flight);
+                const isDeparture = isDUSDeparture(flight);
+
+                // If it's an arrival to DUS and on the ground, it has landed - don't show it
+                if (isArrival && flight.on_ground) {
+                    return false;
+                }
+
+                return isArrival || isDeparture;
+            });
 
             if (upcomingFlightData?.length > 0) {
                 upcomingFlightData.forEach(upcomingFlight => {
@@ -1234,7 +1244,11 @@
                              visibleFlight.origin_iata === upcomingFlight.origin_iata &&
                              visibleFlight.destination_iata === upcomingFlight.destination_iata)
                         );
-                        if (!alreadyVisible && (isDUSArrival(upcomingFlight) || isDUSDeparture(upcomingFlight))) {
+
+                        // Don't add if already visible, or if it's an arrival that has landed
+                        const isLandedArrival = isDUSArrival(upcomingFlight) && upcomingFlight.on_ground;
+
+                        if (!alreadyVisible && !isLandedArrival && (isDUSArrival(upcomingFlight) || isDUSDeparture(upcomingFlight))) {
                             dusOnlyFlights.push(upcomingFlight);
                         }
                     }
