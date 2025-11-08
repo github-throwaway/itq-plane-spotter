@@ -824,22 +824,20 @@
         console.log('🛩️ Real-Time Aviation Intelligence');
 
         // ===== CONSTANTS =====
-        const USE_LOCAL_API = false; // Set to true to use local FlightRadarAPI backend (requires npm start)
+        const USE_LOCAL_API = true; // FlightRadarAPI backend is required (run: npm start)
         const LOCAL_API_BASE = 'http://localhost:3000/api';
         const CORS_PROXY = 'https://corsproxy.io/?';
         const API_URLS = {
-            // Local backend endpoints (FlightRadarAPI)
+            // FlightRadarAPI backend endpoints
             localFlights: (north, south, west, east) => `${LOCAL_API_BASE}/flights?north=${north}&south=${south}&west=${west}&east=${east}`,
             localFlightDetails: (flightId) => `${LOCAL_API_BASE}/flight/${flightId}`,
             localAirport: (iata) => `${LOCAL_API_BASE}/airport/${iata}`,
-            // Fallback direct endpoints (with CORS proxy)
+            // Fallback direct endpoints (with CORS proxy) - for flight data only
             fr24Feed: (bounds) => `https://data-cloud.flightradar24.com/zones/fcgi/feed.js?bounds=${bounds}&faa=1&satellite=1&mlat=1&flarm=1&adsb=1&gnd=1&air=1&vehicles=0&estimated=1&maxage=14400&gliders=0&stats=0`,
             fr24Details: (flightId) => `https://data-live.flightradar24.com/clickhandler/?flight=${flightId}`,
+            // Other APIs
             planespotters: (registration) => `https://api.planespotters.net/pub/photos/reg/${registration}`,
-            atis: 'https://atis.guru/atis/EDDL',
-            // DUS Airport API (fallback when backend not available)
-            dusArrivals: 'https://www.dus.com/api/sitecore/flightapi/SearchFlightsWithOutParams?lang=en&arrival=true&offset=0&codeshare=true&showDetails=false',
-            dusDepartures: 'https://www.dus.com/api/sitecore/flightapi/SearchFlightsWithOutParams?lang=en&arrival=false&offset=0&codeshare=true&showDetails=false'
+            atis: 'https://atis.guru/atis/EDDL'
         };
         const REFRESH_INTERVAL = 60000; // 60 seconds
         const ATIS_REFRESH_INTERVAL = 300000; // 5 minutes
@@ -1008,39 +1006,27 @@
             return timeMinutes > 0 && timeMinutes < 120 ? timeMinutes : null; // Extended to 120 minutes for earlier display
         }
 
-        // Fetch live flights from FlightRadar24 API (via local backend or direct)
+        // Fetch live flights from FlightRadar24 API via backend
         async function fetchFlightRadar24Data() {
             try {
                 let flights = [];
 
-                if (USE_LOCAL_API) {
-                    // Use local FlightRadarAPI backend
-                    console.log(`Fetching flights from local API for expanded search area`);
-                    const apiUrl = API_URLS.localFlights(
-                        SEARCH_BOUNDS.north,
-                        SEARCH_BOUNDS.south,
-                        SEARCH_BOUNDS.west,
-                        SEARCH_BOUNDS.east
-                    );
+                console.log(`Fetching flights from FlightRadarAPI backend`);
+                const apiUrl = API_URLS.localFlights(
+                    SEARCH_BOUNDS.north,
+                    SEARCH_BOUNDS.south,
+                    SEARCH_BOUNDS.west,
+                    SEARCH_BOUNDS.east
+                );
 
-                    try {
-                        const response = await fetch(apiUrl);
-                        if (response.ok) {
-                            const data = await response.json();
-                            flights = data.flights || [];
-                            console.log(`Local API: Received ${flights.length} flights`);
-                        } else {
-                            console.warn('Local API returned error, falling back to direct API');
-                            flights = await fetchFlightRadar24DataDirect();
-                        }
-                    } catch (err) {
-                        console.warn('Local API unavailable, falling back to direct API:', err.message);
-                        flights = await fetchFlightRadar24DataDirect();
-                    }
-                } else {
-                    // Use direct API with CORS proxy
-                    flights = await fetchFlightRadar24DataDirect();
+                const response = await fetch(apiUrl);
+                if (!response.ok) {
+                    throw new Error(`FlightRadarAPI backend returned ${response.status}. Make sure the backend is running (npm start).`);
                 }
+
+                const data = await response.json();
+                flights = data.flights || [];
+                console.log(`FlightRadarAPI: Received ${flights.length} flights`);
 
                 // Filter flights based on runway configuration
                 const filteredFlights = flights.filter(shouldShowFlight);
@@ -1074,79 +1060,16 @@
             }
         }
 
-        // Direct API fetch (fallback method)
-        async function fetchFlightRadar24DataDirect() {
-            try {
-                const bounds = `${SEARCH_BOUNDS.north},${SEARCH_BOUNDS.south},${SEARCH_BOUNDS.west},${SEARCH_BOUNDS.east}`;
-                const apiUrl = API_URLS.fr24Feed(bounds);
-
-                console.log(`Fetching FR24 feed data directly for expanded search area: ${bounds}`);
-                const response = await fetchWithProxy(apiUrl);
-
-                if (response.ok) {
-                    const data = await response.json();
-                    const flights = [];
-
-                    // Parse FR24 data (each key is a flight, value is array)
-                    for (const [key, value] of Object.entries(data)) {
-                        // Skip metadata entries (only process numeric keys or flight IDs)
-                        if (!Array.isArray(value) || value.length < 18) continue;
-
-                        // Parse array according to FR24 format
-                        const flightData = {
-                            id: key,                      // Flight ID for details lookup
-                            icao24: value[0],            // [0] ICAO 24-bit address
-                            latitude: value[1],           // [1]
-                            longitude: value[2],          // [2]
-                            heading: value[3],            // [3]
-                            altitude: value[4],           // [4]
-                            ground_speed: value[5],       // [5]
-                            squawk: value[6],             // [6]
-                            aircraft_code: value[8],      // [8]
-                            registration: value[9],       // [9] *** Aircraft registration ***
-                            timestamp: value[10],         // [10]
-                            origin_iata: value[11],       // [11] Origin airport IATA
-                            destination_iata: value[12],  // [12] Destination airport IATA
-                            flight_number: value[13],     // [13] Flight number
-                            on_ground: value[14],         // [14]
-                            vertical_speed: value[15],    // [15]
-                            callsign: value[16],          // [16] Callsign
-                            airline_icao: value[18]       // [18] Airline ICAO
-                        };
-
-                        flights.push(flightData);
-                    }
-
-                    return flights;
-                }
-
-                console.log('FR24: Failed to fetch feed data');
-                return [];
-            } catch (error) {
-                console.error('Error fetching FR24 feed direct:', error);
-                return [];
-            }
-        }
-
-        // Fetch detailed flight information from FR24 API
+        // Fetch detailed flight information from FlightRadarAPI backend
         async function fetchFlightDetails(flightId) {
             try {
-                if (USE_LOCAL_API) {
-                    // Try local API first
-                    try {
-                        const response = await fetch(API_URLS.localFlightDetails(flightId));
-                        if (response.ok) {
-                            const data = await response.json();
-                            return data.flight || null;
-                        }
-                    } catch (err) {
-                        console.warn(`Local API unavailable for flight details, using fallback`);
-                    }
+                const response = await fetch(API_URLS.localFlightDetails(flightId));
+                if (response.ok) {
+                    const data = await response.json();
+                    return data.flight || null;
                 }
-
-                // Fallback to direct API
-                const response = await fetchWithProxy(API_URLS.fr24Details(flightId));
-                return response.ok ? await response.json() : null;
+                console.warn(`Flight details returned ${response.status} for ${flightId}`);
+                return null;
             } catch (error) {
                 console.error(`Error fetching details for flight ${flightId}:`, error);
                 return null;
@@ -1449,7 +1372,7 @@
             }
         }
 
-        // Fetch upcoming flights from FlightRadarAPI or DUS Airport API (scheduled flights not yet on radar)
+        // Fetch upcoming flights from FlightRadarAPI backend only
         async function fetchDUSUpcomingFlights() {
             try {
                 await fetchATIS();
@@ -1462,179 +1385,71 @@
                 // If no ATIS data, fetch both
                 const fetchBoth = activeRunways.arrivals.length === 0 && activeRunways.departures.length === 0;
 
-                // Try to use FlightRadarAPI backend first
-                if (USE_LOCAL_API) {
-                    try {
-                        console.log('Fetching airport details from FlightRadarAPI backend');
-                        const response = await fetch(API_URLS.localAirport('DUS'));
+                console.log('Fetching airport details from FlightRadarAPI backend');
+                const response = await fetch(API_URLS.localAirport('DUS'));
 
-                        if (response.ok) {
-                            const data = await response.json();
-                            const airportData = data.airport;
-
-                            console.log('Got airport data from FlightRadarAPI:', airportData);
-
-                            // Process arrivals if runway 23 is active
-                            if ((runway23Active || fetchBoth) && airportData.arrivals) {
-                                airportData.arrivals.forEach(flight => {
-                                    if (flight.time && flight.time.scheduled) {
-                                        const time = new Date(flight.time.scheduled.arrival * 1000);
-                                        const now = new Date();
-                                        const minutesAway = Math.round((time - now) / 60000);
-
-                                        if (minutesAway > -10 && minutesAway < 120) {
-                                            upcoming.push({
-                                                flight_number: flight.identification?.number?.default || flight.identification?.callsign || '',
-                                                origin_iata: flight.airport?.origin?.code?.iata || '',
-                                                destination_iata: 'DUS',
-                                                eta: minutesAway > 0 ? minutesAway : 0,
-                                                time: time,
-                                                isArrival: true
-                                            });
-                                        }
-                                    }
-                                });
-                            }
-
-                            // Process departures if runway 05 is active
-                            if ((runway05Active || fetchBoth) && airportData.departures) {
-                                airportData.departures.forEach(flight => {
-                                    if (flight.time && flight.time.scheduled) {
-                                        const time = new Date(flight.time.scheduled.departure * 1000);
-                                        const now = new Date();
-                                        const minutesAway = Math.round((time - now) / 60000);
-
-                                        if (minutesAway > -10 && minutesAway < 120) {
-                                            upcoming.push({
-                                                flight_number: flight.identification?.number?.default || flight.identification?.callsign || '',
-                                                origin_iata: 'DUS',
-                                                destination_iata: flight.airport?.destination?.code?.iata || '',
-                                                eta: minutesAway > 0 ? minutesAway : 0,
-                                                time: time,
-                                                isArrival: false
-                                            });
-                                        }
-                                    }
-                                });
-                            }
-
-                            // Sort and return if we got data from backend
-                            if (upcoming.length > 0) {
-                                upcoming.sort((a, b) => a.time - b.time);
-                                dusUpcomingFlights = upcoming;
-                                console.log(`Found ${upcoming.length} scheduled upcoming flights from FlightRadarAPI`);
-                                return upcoming;
-                            }
-                        }
-                    } catch (err) {
-                        console.warn('FlightRadarAPI backend unavailable, falling back to DUS website API:', err.message);
-                    }
+                if (!response.ok) {
+                    throw new Error(`FlightRadarAPI backend returned ${response.status}. Make sure the backend is running (npm start).`);
                 }
 
-                // Fallback to DUS website API
-                console.log('Using DUS website API for upcoming flights');
+                const data = await response.json();
+                const airportData = data.airport;
 
-                // Fetch arrivals if runway 23 is active (or no ATIS data)
-                if (runway23Active || fetchBoth) {
-                    try {
-                        console.log('Fetching scheduled arrivals from DUS API');
-                        const response = await fetchWithProxy(API_URLS.dusArrivals, {
-                            method: 'GET',
-                            headers: { 'X-Requested-With': 'XMLHttpRequest' },
-                            credentials: 'omit'
-                        });
+                console.log('Got airport data from FlightRadarAPI');
 
-                        if (response.ok) {
-                            const responseText = await response.text();
-                            if (responseText && !responseText.startsWith('Bad Request')) {
-                                const data = JSON.parse(responseText);
-                                const arrivals = data.data?.flights || data.Flights || data.flights || [];
+                // Process arrivals if runway 23 is active
+                if ((runway23Active || fetchBoth) && airportData.arrivals) {
+                    airportData.arrivals.forEach(flight => {
+                        if (flight.time && flight.time.scheduled) {
+                            const time = new Date(flight.time.scheduled.arrival * 1000);
+                            const now = new Date();
+                            const minutesAway = Math.round((time - now) / 60000);
 
-                                console.log(`Processing ${arrivals.length} scheduled arrivals from DUS API`);
-
-                                arrivals.forEach(flight => {
-                                    const timeStr = flight.actualTime || flight.estimatedTime || flight.scheduledTime;
-                                    const time = timeStr ? new Date(timeStr) : null;
-                                    if (time) {
-                                        const now = new Date();
-                                        const minutesAway = Math.round((time - now) / 60000);
-                                        // Show flights within next 2 hours that haven't landed yet
-                                        if (minutesAway > -10 && minutesAway < 120) {
-                                            const status = flight.status?.publicStatus?.name?.toLowerCase() || '';
-                                            if (!status.includes('landed') && !status.includes('cancelled')) {
-                                                upcoming.push({
-                                                    flight_number: (flight.flightNumber || '').trim(),
-                                                    origin_iata: flight.destination?.iataCode || '',
-                                                    destination_iata: 'DUS',
-                                                    eta: minutesAway > 0 ? minutesAway : 0,
-                                                    time: time,
-                                                    isArrival: true
-                                                });
-                                            }
-                                        }
-                                    }
+                            if (minutesAway > -10 && minutesAway < 120) {
+                                upcoming.push({
+                                    flight_number: flight.identification?.number?.default || flight.identification?.callsign || '',
+                                    origin_iata: flight.airport?.origin?.code?.iata || '',
+                                    destination_iata: 'DUS',
+                                    eta: minutesAway > 0 ? minutesAway : 0,
+                                    time: time,
+                                    isArrival: true
                                 });
                             }
                         }
-                    } catch (err) {
-                        console.error('Error fetching DUS arrivals:', err);
-                    }
+                    });
                 }
 
-                // Fetch departures if runway 05 is active (or no ATIS data)
-                if (runway05Active || fetchBoth) {
-                    try {
-                        console.log('Fetching scheduled departures from DUS API');
-                        const response = await fetchWithProxy(API_URLS.dusDepartures, {
-                            method: 'GET',
-                            headers: { 'X-Requested-With': 'XMLHttpRequest' },
-                            credentials: 'omit'
-                        });
+                // Process departures if runway 05 is active
+                if ((runway05Active || fetchBoth) && airportData.departures) {
+                    airportData.departures.forEach(flight => {
+                        if (flight.time && flight.time.scheduled) {
+                            const time = new Date(flight.time.scheduled.departure * 1000);
+                            const now = new Date();
+                            const minutesAway = Math.round((time - now) / 60000);
 
-                        if (response.ok) {
-                            const responseText = await response.text();
-                            if (responseText && !responseText.startsWith('Bad Request')) {
-                                const data = JSON.parse(responseText);
-                                const departures = data.data?.flights || data.Flights || data.flights || [];
-
-                                console.log(`Processing ${departures.length} scheduled departures from DUS API`);
-
-                                departures.forEach(flight => {
-                                    const timeStr = flight.actualTime || flight.estimatedTime || flight.scheduledTime;
-                                    const time = timeStr ? new Date(timeStr) : null;
-                                    if (time) {
-                                        const now = new Date();
-                                        const minutesAway = Math.round((time - now) / 60000);
-                                        // Show flights within next 2 hours that haven't departed yet
-                                        if (minutesAway > -10 && minutesAway < 120) {
-                                            const status = flight.status?.publicStatus?.name?.toLowerCase() || '';
-                                            if (!status.includes('departed') && !status.includes('cancelled')) {
-                                                upcoming.push({
-                                                    flight_number: (flight.flightNumber || '').trim(),
-                                                    origin_iata: 'DUS',
-                                                    destination_iata: flight.destination?.iataCode || '',
-                                                    eta: minutesAway > 0 ? minutesAway : 0,
-                                                    time: time,
-                                                    isArrival: false
-                                                });
-                                            }
-                                        }
-                                    }
+                            if (minutesAway > -10 && minutesAway < 120) {
+                                upcoming.push({
+                                    flight_number: flight.identification?.number?.default || flight.identification?.callsign || '',
+                                    origin_iata: 'DUS',
+                                    destination_iata: flight.airport?.destination?.code?.iata || '',
+                                    eta: minutesAway > 0 ? minutesAway : 0,
+                                    time: time,
+                                    isArrival: false
                                 });
                             }
                         }
-                    } catch (err) {
-                        console.error('Error fetching DUS departures:', err);
-                    }
+                    });
                 }
 
                 // Sort by time (soonest first)
                 upcoming.sort((a, b) => a.time - b.time);
                 dusUpcomingFlights = upcoming;
-                console.log(`Found ${upcoming.length} scheduled upcoming flights from DUS Airport API`);
+                console.log(`Found ${upcoming.length} scheduled upcoming flights from FlightRadarAPI`);
                 return upcoming;
             } catch (error) {
-                console.error('Error fetching DUS upcoming flights:', error);
+                console.error('Error fetching upcoming flights from FlightRadarAPI:', error.message);
+                console.error('Please make sure the backend server is running: npm start');
+                dusUpcomingFlights = [];
                 return [];
             }
         }
