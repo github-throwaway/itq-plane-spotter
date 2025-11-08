@@ -1442,11 +1442,11 @@
                                             <div class="time-block">
                                                 <div class="time-label">🛫 Departure</div>
                                                 <div class="time-value-container">
-                                                    ${actualDep ? `
-                                                        <div class="time-value">${formatTime(actualDep)}</div>
-                                                        ${scheduledDep && scheduledDep !== actualDep ? `<div class="time-value crossed-out" style="font-size: 0.85em;">${formatTime(scheduledDep)}</div>` : ''}
-                                                    ` : scheduledDep ? `
+                                                    ${scheduledDep ? `
                                                         <div class="time-value">${formatTime(scheduledDep)}</div>
+                                                        ${actualDep && scheduledDep !== actualDep ? `<div class="time-value crossed-out" style="font-size: 0.85em;">${formatTime(actualDep)}</div>` : ''}
+                                                    ` : actualDep ? `
+                                                        <div class="time-value">${formatTime(actualDep)}</div>
                                                     ` : ''}
                                                 </div>
                                             </div>
@@ -1455,21 +1455,12 @@
                                             <div class="time-block">
                                                 <div class="time-label">🛬 Arrival</div>
                                                 <div class="time-value-container">
-                                                    ${isApproach ? `
-                                                        ${scheduledArr ? `
-                                                            <div class="time-value">${formatTime(scheduledArr)}</div>
-                                                            ${estimatedArr && scheduledArr !== estimatedArr ? `<div class="time-value crossed-out" style="font-size: 0.85em;">${formatTime(estimatedArr)}</div>` : ''}
-                                                        ` : estimatedArr ? `
-                                                            <div class="time-value">${formatTime(estimatedArr)}</div>
-                                                        ` : ''}
-                                                    ` : `
-                                                        ${estimatedArr ? `
-                                                            <div class="time-value">${formatTime(estimatedArr)}</div>
-                                                            ${scheduledArr && scheduledArr !== estimatedArr ? `<div class="time-value crossed-out" style="font-size: 0.85em;">${formatTime(scheduledArr)}</div>` : ''}
-                                                        ` : scheduledArr ? `
-                                                            <div class="time-value">${formatTime(scheduledArr)}</div>
-                                                        ` : ''}
-                                                    `}
+                                                    ${scheduledArr ? `
+                                                        <div class="time-value">${formatTime(scheduledArr)}</div>
+                                                        ${estimatedArr && scheduledArr !== estimatedArr ? `<div class="time-value crossed-out" style="font-size: 0.85em;">${formatTime(estimatedArr)}</div>` : ''}
+                                                    ` : estimatedArr ? `
+                                                        <div class="time-value">${formatTime(estimatedArr)}</div>
+                                                    ` : ''}
                                                 </div>
                                             </div>
                                         ` : ''}
