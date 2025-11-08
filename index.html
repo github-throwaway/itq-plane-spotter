@@ -948,13 +948,14 @@
                 'United States': '🇺🇸', 'Canada': '🇨🇦',
                 'United Arab Emirates': '🇦🇪', 'Qatar': '🇶🇦', 'Saudi Arabia': '🇸🇦',
                 'Egypt': '🇪🇬', 'Morocco': '🇲🇦', 'Tunisia': '🇹🇳', 'Algeria': '🇩🇿',
-                'Israel': '🇮🇱', 'Lebanon': '🇱🇧', 'Jordan': '🇯🇴',
+                'Israel': '🇮🇱', 'Lebanon': '🇱🇧', 'Jordan': '🇯🇴', 'Iraq': '🇮🇶',
+                'Kuwait': '🇰🇼', 'Bahrain': '🇧🇭', 'Oman': '🇴🇲', 'Yemen': '🇾🇪',
                 'India': '🇮🇳', 'China': '🇨🇳', 'Japan': '🇯🇵', 'South Korea': '🇰🇷',
                 'Singapore': '🇸🇬', 'Thailand': '🇹🇭', 'Malaysia': '🇲🇾', 'Indonesia': '🇮🇩',
                 'Russia': '🇷🇺', 'Ukraine': '🇺🇦', 'Sweden': '🇸🇪', 'Norway': '🇳🇴',
                 'Denmark': '🇩🇰', 'Finland': '🇫🇮', 'Ireland': '🇮🇪',
                 'Czech Republic': '🇨🇿', 'Hungary': '🇭🇺', 'Romania': '🇷🇴',
-                'Bulgaria': '🇧🇬', 'Croatia': '🇭🇷', 'Serbia': '🇷🇸',
+                'Bulgaria': '🇧🇬', 'Croatia': '🇭🇷', 'Serbia': '🇷🇸', 'Kosovo': '🇽🇰',
                 'Slovenia': '🇸🇮', 'Slovakia': '🇸🇰', 'Lithuania': '🇱🇹',
                 'Latvia': '🇱🇻', 'Estonia': '🇪🇪', 'Iceland': '🇮🇸',
                 'Luxembourg': '🇱🇺', 'Malta': '🇲🇹', 'Cyprus': '🇨🇾',
@@ -1411,16 +1412,6 @@
                             <div class="flight-info">
                                 <div class="flight-number">${flight.flight_number || flight.callsign || 'Unknown'}</div>
                                 ${flight.airline_name ? `<div class="flight-airline">${flight.airline_name}</div>` : ''}
-                                <div class="live-data-container">
-                                    <div class="data-badge" title="Altitude">
-                                        <span class="data-badge-icon">⬆️</span>
-                                        <span class="data-badge-value">${altitude}</span>
-                                    </div>
-                                    <div class="data-badge" title="Ground Speed">
-                                        <span class="data-badge-icon">🚀</span>
-                                        <span class="data-badge-value">${speed}</span>
-                                    </div>
-                                </div>
                             </div>
                         </div>
 
@@ -1434,13 +1425,13 @@
 
                             <div class="flight-airports">
                                 <div class="airport-info">
-                                    <div class="airport-city">${originFlag ? `${originFlag} ` : ''}${originCity}</div>
-                                    <div class="airport-code">${originCode}</div>
+                                    <div class="airport-city">${originCity}</div>
+                                    <div class="airport-code">${originFlag ? `${originFlag} ` : ''}${originCode}</div>
                                 </div>
                                 <div class="flight-arrow">✈</div>
                                 <div class="airport-info destination">
-                                    <div class="airport-city">${destFlag ? `${destFlag} ` : ''}${destCity}</div>
-                                    <div class="airport-code">${destCode}</div>
+                                    <div class="airport-city">${destCity}</div>
+                                    <div class="airport-code">${destFlag ? `${destFlag} ` : ''}${destCode}</div>
                                 </div>
                             </div>
 
@@ -1484,6 +1475,17 @@
                                         ` : ''}
                                     </div>
                                 ` : ''}
+                            </div>
+
+                            <div class="live-data-container">
+                                <div class="data-badge" title="Altitude">
+                                    <span class="data-badge-icon">⬆️</span>
+                                    <span class="data-badge-value">${altitude}</span>
+                                </div>
+                                <div class="data-badge" title="Ground Speed">
+                                    <span class="data-badge-icon">🚀</span>
+                                    <span class="data-badge-value">${speed}</span>
+                                </div>
                             </div>
                         </div>
                     </div>
