@@ -33,6 +33,12 @@
             --gray-600: #475569;
             --gray-700: #334155;
             --white-semi: rgba(255, 255, 255, 0.6);
+
+            /* Flight type colors */
+            --arrival-green: #10b981;
+            --arrival-green-glow: rgba(16, 185, 129, 0.3);
+            --departure-amber: #f59e0b;
+            --departure-amber-glow: rgba(245, 158, 11, 0.3);
         }
 
         body {
@@ -168,21 +174,44 @@
         }
 
         .upcoming-row {
-            background: rgba(0, 0, 0, 0.15);
-            padding: 12px 16px;
-            border-radius: 6px;
+            background: rgba(0, 0, 0, 0.2);
+            backdrop-filter: blur(5px);
+            padding: 14px 18px;
+            border-radius: 10px;
             border: 1px solid var(--gray-200-alpha);
+            border-left: 3px solid transparent;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            transition: all 0.2s ease;
+            transition: all 0.3s ease;
             cursor: pointer;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .upcoming-row.arrival {
+            border-left-color: var(--arrival-green);
+        }
+
+        .upcoming-row.departure {
+            border-left-color: var(--departure-amber);
         }
 
         .upcoming-row:hover {
-            background: rgba(0, 0, 0, 0.25);
+            background: rgba(0, 0, 0, 0.3);
             border-color: var(--white-semi);
-            transform: translateX(4px);
+            transform: translateX(6px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        .upcoming-row.arrival:hover {
+            border-left-color: var(--arrival-green);
+            box-shadow: 0 4px 12px var(--arrival-green-glow);
+        }
+
+        .upcoming-row.departure:hover {
+            border-left-color: var(--departure-amber);
+            box-shadow: 0 4px 12px var(--departure-amber-glow);
         }
 
         .upcoming-info {
@@ -217,10 +246,11 @@
         }
 
         .flight-row {
-            background: rgba(0, 0, 0, 0.2);
+            background: rgba(0, 0, 0, 0.25);
+            backdrop-filter: blur(10px);
             padding: 20px;
-            border-radius: 8px;
-            transition: all 0.2s ease;
+            border-radius: 12px;
+            transition: all 0.3s ease;
             animation: slideIn 0.4s ease;
             display: flex;
             flex-direction: column;
@@ -228,6 +258,7 @@
             border: 1px solid var(--gray-200-alpha);
             position: relative;
             overflow: hidden;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
         }
 
         .flight-row::before {
@@ -236,19 +267,39 @@
             top: 0;
             left: 0;
             right: 0;
-            height: 3px;
+            height: 4px;
             background: var(--white);
             opacity: 0;
-            transition: opacity 0.2s ease;
+            transition: all 0.3s ease;
+        }
+
+        .flight-row.arriving::before {
+            background: linear-gradient(90deg, var(--arrival-green) 0%, transparent 100%);
+        }
+
+        .flight-row.departing::before {
+            background: linear-gradient(90deg, var(--departure-amber) 0%, transparent 100%);
         }
 
         .flight-row:hover {
-            background: rgba(0, 0, 0, 0.3);
+            background: rgba(0, 0, 0, 0.35);
             border-color: var(--white);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 12px rgba(0, 0, 0, 0.2);
         }
 
         .flight-row:hover::before {
             opacity: 1;
+        }
+
+        .flight-row.arriving:hover {
+            border-color: var(--arrival-green);
+            box-shadow: 0 8px 16px var(--arrival-green-glow);
+        }
+
+        .flight-row.departing:hover {
+            border-color: var(--departure-amber);
+            box-shadow: 0 8px 16px var(--departure-amber-glow);
         }
 
         @keyframes slideIn {
@@ -263,25 +314,28 @@
         }
 
         .flight-row.arriving::after {
-            content: '↓';
+            content: '🛬';
             position: absolute;
-            top: 20px;
-            right: 20px;
-            font-size: 1.3em;
-            color: var(--white);
-            opacity: 0.2;
-            font-weight: 700;
+            top: 16px;
+            right: 16px;
+            font-size: 1.5em;
+            opacity: 0.3;
+            filter: drop-shadow(0 0 8px var(--arrival-green-glow));
         }
 
         .flight-row.departing::after {
-            content: '↑';
+            content: '🛫';
             position: absolute;
-            top: 20px;
-            right: 20px;
-            font-size: 1.3em;
-            color: var(--white);
-            opacity: 0.2;
-            font-weight: 700;
+            top: 16px;
+            right: 16px;
+            font-size: 1.5em;
+            opacity: 0.3;
+            filter: drop-shadow(0 0 8px var(--departure-amber-glow));
+        }
+
+        .flight-row.arriving:hover::after,
+        .flight-row.departing:hover::after {
+            opacity: 0.6;
         }
 
         .flight-header {
@@ -316,11 +370,20 @@
         }
 
         .flight-number {
-            font-size: 1.5em;
-            font-weight: 700;
+            font-size: 1.8em;
+            font-weight: 800;
             color: var(--white);
             letter-spacing: -0.5px;
             line-height: 1;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .flight-row.arriving .flight-number {
+            color: var(--arrival-green);
+        }
+
+        .flight-row.departing .flight-number {
+            color: var(--departure-amber);
         }
 
         .flight-airline {
@@ -470,6 +533,52 @@
             background: var(--orange);
             color: var(--white);
             box-shadow: 0 2px 8px rgba(255, 107, 53, 0.25);
+        }
+
+        /* Live data badges */
+        .live-data-container {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-top: 8px;
+        }
+
+        .data-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 12px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            font-size: 0.75em;
+            font-weight: 600;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            transition: all 0.2s ease;
+        }
+
+        .data-badge:hover {
+            background: rgba(255, 255, 255, 0.15);
+            transform: scale(1.05);
+        }
+
+        .data-badge-icon {
+            font-size: 1.1em;
+            opacity: 0.8;
+        }
+
+        .data-badge-value {
+            color: var(--white);
+            font-weight: 700;
+        }
+
+        .flight-row.arriving .data-badge {
+            border-color: var(--arrival-green);
+            background: rgba(16, 185, 129, 0.15);
+        }
+
+        .flight-row.departing .data-badge {
+            border-color: var(--departure-amber);
+            background: rgba(245, 158, 11, 0.15);
         }
 
         .footer {
@@ -1369,6 +1478,11 @@
                 const rowId = `flight-${flight.flight_number?.replace(/\s/g, '-') || flight.id}`;
                 const photoId = `${rowId}-photo`;
 
+                // Format live data
+                const altitude = flight.altitude ? `${Math.round(flight.altitude).toLocaleString()} ft` : 'N/A';
+                const speed = flight.ground_speed ? `${Math.round(flight.ground_speed)} kts` : 'N/A';
+                const heading = flight.heading ? `${Math.round(flight.heading)}°` : 'N/A';
+
                 return `
                     <div class="flight-row ${flightStatus}" id="${rowId}">
                         <div class="flight-header">
@@ -1376,6 +1490,20 @@
                             <div class="flight-info">
                                 <div class="flight-number">${flight.flight_number || flight.callsign || 'Unknown'}</div>
                                 ${flight.airline_name ? `<div class="flight-airline">${flight.airline_name}</div>` : ''}
+                                <div class="live-data-container">
+                                    <div class="data-badge" title="Altitude">
+                                        <span class="data-badge-icon">⬆️</span>
+                                        <span class="data-badge-value">${altitude}</span>
+                                    </div>
+                                    <div class="data-badge" title="Ground Speed">
+                                        <span class="data-badge-icon">🚀</span>
+                                        <span class="data-badge-value">${speed}</span>
+                                    </div>
+                                    <div class="data-badge" title="Heading">
+                                        <span class="data-badge-icon">🧭</span>
+                                        <span class="data-badge-value">${heading}</span>
+                                    </div>
+                                </div>
                             </div>
                         </div>
 
@@ -1541,6 +1669,25 @@
                 // If no ATIS data, fetch both
                 const fetchBoth = !hasArrivalRunway && !hasDepartureRunway;
 
+                // Determine what to fetch based on runway configuration
+                // Prioritize arrivals over departures (same as visible planes)
+                let fetchArrivals = false;
+                let fetchDepartures = false;
+
+                if (fetchBoth) {
+                    // No ATIS data - fetch both
+                    fetchArrivals = true;
+                    fetchDepartures = true;
+                } else if (hasArrivalRunway) {
+                    // Only fetch arrivals when arrival runway is active
+                    fetchArrivals = true;
+                    fetchDepartures = false;
+                } else if (hasDepartureRunway) {
+                    // Only fetch departures when only departure runway is active
+                    fetchArrivals = false;
+                    fetchDepartures = true;
+                }
+
                 let airportData = null;
 
                 // Try backend first if enabled
@@ -1575,8 +1722,8 @@
                     return [];
                 }
 
-                // Process arrivals if runway is active
-                if ((hasArrivalRunway || fetchBoth) && airportData.arrivals) {
+                // Process arrivals only if flag is set
+                if (fetchArrivals && airportData.arrivals) {
                     const arrivals = Array.isArray(airportData.arrivals) ? airportData.arrivals : (airportData.arrivals.data || []);
                     arrivals.forEach(flight => {
                         let time = null;
@@ -1630,8 +1777,8 @@
                     });
                 }
 
-                // Process departures if runway is active
-                if ((hasDepartureRunway || fetchBoth) && airportData.departures) {
+                // Process departures only if flag is set
+                if (fetchDepartures && airportData.departures) {
                     const departures = Array.isArray(airportData.departures) ? airportData.departures : (airportData.departures.data || []);
                     departures.forEach(flight => {
                         let time = null;
@@ -1815,10 +1962,13 @@
                 const route = `${flight.origin_iata || '?'} ✈ ${flight.destination_iata || '?'}`;
                 const eta = flight.eta !== undefined ? flight.eta : '?';
 
+                const upcomingClass = flight.isArrival ? 'arrival' : 'departure';
+                const upcomingIcon = flight.isArrival ? '🛬' : '🛫';
+
                 return `
-                    <div class="upcoming-row" style="cursor: pointer;" onclick="centerMapOnFlight('${flightNumber}', '${flight.origin_iata || ''}', '${flight.destination_iata || ''}')">
+                    <div class="upcoming-row ${upcomingClass}" style="cursor: pointer;" onclick="centerMapOnFlight('${flightNumber}', '${flight.origin_iata || ''}', '${flight.destination_iata || ''}')">
                         <div class="upcoming-info">
-                            <div class="upcoming-flight-number">✈️ ${flightNumber}</div>
+                            <div class="upcoming-flight-number">${upcomingIcon} ${flightNumber}</div>
                             <div class="upcoming-route">${route}</div>
                         </div>
                         <div style="text-align: right;">
