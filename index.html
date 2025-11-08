@@ -795,10 +795,10 @@
             </div>
 
             <div class="map-panel">
-                <h2 class="section-title">Live Map</h2>
+                <h2 class="section-title" style="cursor: pointer;" onclick="resetMap()">Live Map</h2>
                 <div class="map-container">
                     <iframe id="map-iframe" src="https://www.flightradar24.com/simple_index.php?lat=51.305&lon=6.825&z=13" allowfullscreen></iframe>
-                    <div class="map-badges-blocker"></div>
+                    <div class="map-badges-blocker" onclick="resetMap()" style="cursor: pointer; pointer-events: auto;"></div>
                 </div>
             </div>
 
@@ -894,14 +894,14 @@
                 return isArrival || isDeparture;
             }
 
-            // Show arrivals if there's any arrival runway active
-            if (isArrival && hasArrivalRunway) {
-                return true;
-            }
-
-            // Show departures if there's any departure runway active
-            if (isDeparture && hasDepartureRunway) {
-                return true;
+            // Prioritize arrivals over departures when both runways are active
+            // This ensures we only show ONE type at a time
+            if (hasArrivalRunway) {
+                // Only show arrivals when arrival runway is active
+                return isArrival;
+            } else if (hasDepartureRunway) {
+                // Only show departures when only departure runway is active
+                return isDeparture;
             }
 
             return false;
@@ -1691,6 +1691,15 @@
                 }
             } else {
                 console.warn(`Flight ${flightNumber} is not being tracked yet (may still be on ground or outside tracking area)`);
+            }
+        }
+
+        // Reset map to default position
+        function resetMap() {
+            const mapIframe = document.getElementById('map-iframe');
+            if (mapIframe) {
+                mapIframe.src = 'https://www.flightradar24.com/simple_index.php?lat=51.305&lon=6.825&z=13';
+                console.log('Map reset to default position');
             }
         }
 
