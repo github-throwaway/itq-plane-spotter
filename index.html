@@ -1541,6 +1541,25 @@
                 // If no ATIS data, fetch both
                 const fetchBoth = !hasArrivalRunway && !hasDepartureRunway;
 
+                // Determine what to fetch based on runway configuration
+                // Prioritize arrivals over departures (same as visible planes)
+                let fetchArrivals = false;
+                let fetchDepartures = false;
+
+                if (fetchBoth) {
+                    // No ATIS data - fetch both
+                    fetchArrivals = true;
+                    fetchDepartures = true;
+                } else if (hasArrivalRunway) {
+                    // Only fetch arrivals when arrival runway is active
+                    fetchArrivals = true;
+                    fetchDepartures = false;
+                } else if (hasDepartureRunway) {
+                    // Only fetch departures when only departure runway is active
+                    fetchArrivals = false;
+                    fetchDepartures = true;
+                }
+
                 let airportData = null;
 
                 // Try backend first if enabled
@@ -1575,8 +1594,8 @@
                     return [];
                 }
 
-                // Process arrivals if runway is active
-                if ((hasArrivalRunway || fetchBoth) && airportData.arrivals) {
+                // Process arrivals only if flag is set
+                if (fetchArrivals && airportData.arrivals) {
                     const arrivals = Array.isArray(airportData.arrivals) ? airportData.arrivals : (airportData.arrivals.data || []);
                     arrivals.forEach(flight => {
                         let time = null;
@@ -1630,8 +1649,8 @@
                     });
                 }
 
-                // Process departures if runway is active
-                if ((hasDepartureRunway || fetchBoth) && airportData.departures) {
+                // Process departures only if flag is set
+                if (fetchDepartures && airportData.departures) {
                     const departures = Array.isArray(airportData.departures) ? airportData.departures : (airportData.departures.data || []);
                     departures.forEach(flight => {
                         let time = null;
