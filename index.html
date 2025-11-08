@@ -323,16 +323,6 @@
             letter-spacing: 0.5px;
         }
 
-        .flight-route {
-            font-size: 1.1em;
-            color: var(--white);
-            font-weight: 600;
-            margin-top: 4px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
         .flight-details {
             display: flex;
             flex-direction: column;
@@ -450,18 +440,6 @@
             align-items: center;
             gap: 8px;
             flex-wrap: wrap;
-        }
-
-        .status-badge {
-            padding: 8px 16px;
-            border-radius: 20px;
-            font-size: 0.75em;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            background: var(--orange);
-            color: var(--white);
-            box-shadow: 0 2px 8px rgba(255, 107, 53, 0.25);
         }
 
         .footer {
@@ -1250,7 +1228,6 @@
                     <div class="no-flights">
                         <div class="plane-icon">✈️</div>
                         <div class="no-flights-title">No Visible Planes</div>
-                        <div class="no-flights-text">Scanning for aircraft in the viewing area...</div>
                     </div>
                 `;
                 return;
@@ -1367,22 +1344,6 @@
                 const isArriving = flight.destination_iata === 'DUS' || flight.destination_name?.includes('Düsseldorf');
                 const flightStatus = isArriving ? 'arriving' : 'departing';
 
-                // Get location to display
-                let location, locationLabel, countryFlag;
-                if (isArriving) {
-                    const country = flight.origin_country || '';
-                    const city = flight.origin_city || flight.origin_name || flight.origin_iata;
-                    location = country ? `${city}, ${country}` : city;
-                    locationLabel = 'from';
-                    countryFlag = getCountryFlag(country);
-                } else {
-                    const country = flight.destination_country || '';
-                    const city = flight.destination_city || flight.destination_name || flight.destination_iata;
-                    location = country ? `${city}, ${country}` : city;
-                    locationLabel = 'to';
-                    countryFlag = getCountryFlag(country);
-                }
-
                 // Get comprehensive flight details
                 const details = flight.details;
                 const aircraftType = details?.aircraft?.model?.code || flight.aircraft_code || '';
@@ -1405,9 +1366,6 @@
                 const actualDep = details?.time?.real?.departure || 0;
                 const scheduledArr = details?.time?.scheduled?.arrival || 0;
                 const estimatedArr = details?.time?.estimated?.arrival || 0;
-
-                // Check if flight is in approach status
-                const isApproach = flight.status_text?.toLowerCase().includes('approach') || false;
 
                 const rowId = `flight-${flight.flight_number?.replace(/\s/g, '-') || flight.id}`;
                 const photoId = `${rowId}-photo`;
