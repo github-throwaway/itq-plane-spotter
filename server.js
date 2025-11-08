@@ -36,10 +36,7 @@ app.get('/api/flights', async (req, res) => {
         // Format bounds as "N,S,W,E" string
         const bounds = `${north},${south},${west},${east}`;
 
-        console.log(`Fetching flights for bounds: ${bounds}`);
         const flights = await frApi.getFlights(null, bounds);
-
-        console.log(`Found ${flights.length} flights`);
 
         // Transform flight data to a cleaner format
         const flightData = flights.map(flight => ({
@@ -85,7 +82,6 @@ app.get('/api/flight/:id', async (req, res) => {
     try {
         const { id } = req.params;
 
-        console.log(`Fetching details for flight ID: ${id}`);
         const details = await frApi.getFlightDetails(id);
 
         if (!details) {
@@ -115,7 +111,6 @@ app.get('/api/airport/:iata', async (req, res) => {
     try {
         const { iata } = req.params;
 
-        console.log(`Fetching airport details with flights for: ${iata}`);
         const details = await frApi.getAirportDetails(iata);
 
         if (!details) {
@@ -137,29 +132,6 @@ app.get('/api/airport/:iata', async (req, res) => {
     }
 });
 
-/**
- * GET /api/airlines
- * Get list of airlines
- */
-app.get('/api/airlines', async (req, res) => {
-    try {
-        console.log('Fetching airlines list');
-        const airlines = await frApi.getAirlines();
-
-        res.json({
-            success: true,
-            count: airlines.length,
-            airlines: airlines
-        });
-    } catch (error) {
-        console.error('Error fetching airlines:', error);
-        res.status(500).json({
-            error: 'Failed to fetch airlines',
-            message: error.message
-        });
-    }
-});
-
 // Start server
 app.listen(PORT, () => {
     console.log(`ITQ Plane Spotter API server running on port ${PORT}`);
@@ -168,5 +140,4 @@ app.listen(PORT, () => {
     console.log(`  GET /api/flights?north=X&south=X&west=X&east=X`);
     console.log(`  GET /api/flight/:id`);
     console.log(`  GET /api/airport/:iata`);
-    console.log(`  GET /api/airlines`);
 });
