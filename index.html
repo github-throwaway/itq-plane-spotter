@@ -1722,6 +1722,7 @@
 
                 // If no flights found for today, get first 3 flights for tomorrow
                 if (upcoming.length === 0) {
+                    console.log('No flights found for today, fetching tomorrow\'s flights...');
                     const tomorrowFlights = [];
                     const now = new Date();
                     const endOfToday = new Date(now);
@@ -1804,8 +1805,10 @@
                     // Sort and take first 3
                     tomorrowFlights.sort((a, b) => a.time - b.time);
                     upcoming = tomorrowFlights.slice(0, 3);
+                    console.log(`Found ${upcoming.length} flights for tomorrow:`, upcoming.map(f => `${f.flight_number} at ${new Date(f.time).toLocaleTimeString()}`));
                 }
 
+                console.log(`Total upcoming flights to display: ${upcoming.length}`);
                 dusUpcomingFlights = upcoming;
                 return upcoming;
             } catch (error) {
