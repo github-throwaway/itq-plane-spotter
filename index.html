@@ -1624,7 +1624,7 @@
         }
 
         // Center map on a specific flight
-        function centerMapOnFlight(flightNumber, originIata, destIata) {
+        async function centerMapOnFlight(flightNumber, originIata, destIata) {
             // Find the flight in upcomingFlightData (which has coordinates)
             let flight = upcomingFlightData.find(f => {
                 const fNum = f.flight_number || f.callsign || '';
@@ -1643,6 +1643,44 @@
                 });
             }
 
+            // If still not found, try searching in a wider area
+            if (!flight || !flight.latitude || !flight.longitude) {
+                console.log(`Flight ${flightNumber} not in local data, searching wider area...`);
+
+                // Search in a much wider area around DUS
+                const wideBounds = `52.0,50.6,5.5,8.0`; // Covers most of western Germany
+                const apiUrl = API_URLS.fr24Feed(wideBounds);
+
+                try {
+                    const response = await fetchWithProxy(apiUrl);
+                    if (response.ok) {
+                        const data = await response.json();
+
+                        // Parse FR24 data to find our flight
+                        for (const [key, value] of Object.entries(data)) {
+                            if (!Array.isArray(value) || value.length < 18) continue;
+
+                            const flightNum = value[13]; // flight_number
+                            const origin = value[11]; // origin_iata
+                            const dest = value[12]; // destination_iata
+
+                            if (flightNum?.trim() === flightNumber.trim() &&
+                                origin === originIata &&
+                                dest === destIata) {
+                                flight = {
+                                    latitude: value[1],
+                                    longitude: value[2]
+                                };
+                                console.log(`Found ${flightNumber} in wider search at ${flight.latitude}, ${flight.longitude}`);
+                                break;
+                            }
+                        }
+                    }
+                } catch (error) {
+                    console.error('Error searching for flight:', error);
+                }
+            }
+
             if (flight && flight.latitude && flight.longitude) {
                 const mapIframe = document.getElementById('map-iframe');
                 if (mapIframe) {
@@ -1651,7 +1689,7 @@
                     console.log(`Centered map on ${flightNumber} at ${flight.latitude}, ${flight.longitude}`);
                 }
             } else {
-                console.warn(`Could not find coordinates for flight ${flightNumber}`);
+                console.warn(`Flight ${flightNumber} is not being tracked yet (may still be on ground or outside tracking area)`);
             }
         }
 
