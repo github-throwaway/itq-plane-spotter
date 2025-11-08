@@ -951,6 +951,7 @@
         let activeRunways = { arrivals: [], departures: [] };
         let lastATISFetch = 0;
         let dusUpcomingFlights = [];
+        let enrichedFlightCache = new Map(); // Cache for flight details to avoid re-fetching
 
         // Check if plane is in viewing area
         function isInViewingArea(lat, lon) {
@@ -1255,12 +1256,40 @@
                 });
             }
 
-            // Fetch details for each flight and enrich data
+            // Get current flight IDs for cache cleanup
+            const currentFlightIds = new Set(dusOnlyFlights.map(f => f.id));
+
+            // Clean up cache - remove flights no longer visible
+            for (const [flightId, cachedData] of enrichedFlightCache.entries()) {
+                if (!currentFlightIds.has(flightId)) {
+                    enrichedFlightCache.delete(flightId);
+                }
+            }
+
+            // Fetch details only for new flights, reuse cached data for existing ones
             const enrichedFlights = await Promise.all(
                 dusOnlyFlights.map(async (flight) => {
+                    // Check cache first
+                    if (enrichedFlightCache.has(flight.id)) {
+                        const cached = enrichedFlightCache.get(flight.id);
+                        // Update position and speed from live data, keep enriched details
+                        return {
+                            ...cached,
+                            latitude: flight.latitude,
+                            longitude: flight.longitude,
+                            heading: flight.heading,
+                            altitude: flight.altitude,
+                            ground_speed: flight.ground_speed,
+                            on_ground: flight.on_ground,
+                            vertical_speed: flight.vertical_speed
+                        };
+                    }
+
+                    // Not in cache, fetch details
+                    console.log(`Fetching details for new flight: ${flight.flight_number || flight.id}`);
                     const details = await fetchFlightDetails(flight.id);
 
-                    return {
+                    const enrichedFlight = {
                         ...flight,
                         details: details,
                         // Extract useful info from details
@@ -1275,6 +1304,11 @@
                         estimated_time: details?.time?.estimated?.departure || details?.time?.estimated?.arrival || 0,
                         status_text: details?.status?.text || ''
                     };
+
+                    // Store in cache
+                    enrichedFlightCache.set(flight.id, enrichedFlight);
+
+                    return enrichedFlight;
                 })
             );
 
@@ -1411,15 +1445,30 @@
 
             container.innerHTML = flightsHtml;
 
-            // Load photos asynchronously
+            // Load photos asynchronously only for flights without cached photos
             enrichedFlights.forEach(async (flight) => {
                 if (flight.registration) {
-                    const photoUrl = await fetchAircraftPhoto(flight.registration);
-                    if (photoUrl) {
-                        const rowId = `flight-${flight.flight_number?.replace(/\s/g, '-') || flight.id}`;
-                        const photoElement = document.getElementById(`${rowId}-photo`);
+                    const rowId = `flight-${flight.flight_number?.replace(/\s/g, '-') || flight.id}`;
+                    const photoElement = document.getElementById(`${rowId}-photo`);
+
+                    // Check if we already have the photo URL cached
+                    if (flight.photoUrl) {
+                        // Use cached photo
                         if (photoElement) {
+                            photoElement.innerHTML = `<img src="${flight.photoUrl}" alt="${flight.registration}" style="width: 100%; height: 100%; object-fit: contain; border-radius: 8px;" onerror="this.parentElement.innerHTML='✈️'">`;
+                        }
+                    } else {
+                        // Fetch new photo
+                        const photoUrl = await fetchAircraftPhoto(flight.registration);
+                        if (photoUrl && photoElement) {
                             photoElement.innerHTML = `<img src="${photoUrl}" alt="${flight.registration}" style="width: 100%; height: 100%; object-fit: contain; border-radius: 8px;" onerror="this.parentElement.innerHTML='✈️'">`;
+
+                            // Update cache with photo URL
+                            if (enrichedFlightCache.has(flight.id)) {
+                                const cached = enrichedFlightCache.get(flight.id);
+                                cached.photoUrl = photoUrl;
+                                enrichedFlightCache.set(flight.id, cached);
+                            }
                         }
                     }
                 }
