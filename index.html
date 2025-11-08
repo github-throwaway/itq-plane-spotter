@@ -854,7 +854,9 @@
         const ATIS_REFRESH_INTERVAL = 300000; // 5 minutes
         let currentRefreshInterval = REFRESH_INTERVAL_NORMAL;
         const VIEW_BOUNDS = {
-            north: 51.320, south: 51.290, west: 6.750, east: 6.900
+            // Expanded to match what's visible on embedded FR24 map at z=13
+            // Center: 51.305, 6.825
+            north: 51.380, south: 51.230, west: 6.650, east: 7.000
         };
         const SEARCH_BOUNDS = {
             north: VIEW_BOUNDS.north + 0.09,
