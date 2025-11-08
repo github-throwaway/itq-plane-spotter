@@ -809,14 +809,16 @@
         const LOCAL_API_BASE = 'http://localhost:3000/api';
         const CORS_PROXY = 'https://corsproxy.io/?';
         const API_URLS = {
-            // Local backend endpoints
+            // Local backend endpoints (FlightRadarAPI)
             localFlights: (north, south, west, east) => `${LOCAL_API_BASE}/flights?north=${north}&south=${south}&west=${west}&east=${east}`,
             localFlightDetails: (flightId) => `${LOCAL_API_BASE}/flight/${flightId}`,
+            localAirport: (iata) => `${LOCAL_API_BASE}/airport/${iata}`,
             // Fallback direct endpoints (with CORS proxy)
             fr24Feed: (bounds) => `https://data-cloud.flightradar24.com/zones/fcgi/feed.js?bounds=${bounds}&faa=1&satellite=1&mlat=1&flarm=1&adsb=1&gnd=1&air=1&vehicles=0&estimated=1&maxage=14400&gliders=0&stats=0`,
             fr24Details: (flightId) => `https://data-live.flightradar24.com/clickhandler/?flight=${flightId}`,
             planespotters: (registration) => `https://api.planespotters.net/pub/photos/reg/${registration}`,
             atis: 'https://atis.guru/atis/EDDL',
+            // DUS Airport API (fallback when backend not available)
             dusArrivals: 'https://www.dus.com/api/sitecore/flightapi/SearchFlightsWithOutParams?lang=en&arrival=true&offset=0&codeshare=true&showDetails=false',
             dusDepartures: 'https://www.dus.com/api/sitecore/flightapi/SearchFlightsWithOutParams?lang=en&arrival=false&offset=0&codeshare=true&showDetails=false'
         };
@@ -1428,7 +1430,7 @@
             }
         }
 
-        // Fetch upcoming flights from DUS Airport API (scheduled flights not yet on radar)
+        // Fetch upcoming flights from FlightRadarAPI or DUS Airport API (scheduled flights not yet on radar)
         async function fetchDUSUpcomingFlights() {
             try {
                 await fetchATIS();
@@ -1440,6 +1442,78 @@
 
                 // If no ATIS data, fetch both
                 const fetchBoth = activeRunways.arrivals.length === 0 && activeRunways.departures.length === 0;
+
+                // Try to use FlightRadarAPI backend first
+                if (USE_LOCAL_API) {
+                    try {
+                        console.log('Fetching airport details from FlightRadarAPI backend');
+                        const response = await fetch(API_URLS.localAirport('DUS'));
+
+                        if (response.ok) {
+                            const data = await response.json();
+                            const airportData = data.airport;
+
+                            console.log('Got airport data from FlightRadarAPI:', airportData);
+
+                            // Process arrivals if runway 23 is active
+                            if ((runway23Active || fetchBoth) && airportData.arrivals) {
+                                airportData.arrivals.forEach(flight => {
+                                    if (flight.time && flight.time.scheduled) {
+                                        const time = new Date(flight.time.scheduled.arrival * 1000);
+                                        const now = new Date();
+                                        const minutesAway = Math.round((time - now) / 60000);
+
+                                        if (minutesAway > -10 && minutesAway < 120) {
+                                            upcoming.push({
+                                                flight_number: flight.identification?.number?.default || flight.identification?.callsign || '',
+                                                origin_iata: flight.airport?.origin?.code?.iata || '',
+                                                destination_iata: 'DUS',
+                                                eta: minutesAway > 0 ? minutesAway : 0,
+                                                time: time,
+                                                isArrival: true
+                                            });
+                                        }
+                                    }
+                                });
+                            }
+
+                            // Process departures if runway 05 is active
+                            if ((runway05Active || fetchBoth) && airportData.departures) {
+                                airportData.departures.forEach(flight => {
+                                    if (flight.time && flight.time.scheduled) {
+                                        const time = new Date(flight.time.scheduled.departure * 1000);
+                                        const now = new Date();
+                                        const minutesAway = Math.round((time - now) / 60000);
+
+                                        if (minutesAway > -10 && minutesAway < 120) {
+                                            upcoming.push({
+                                                flight_number: flight.identification?.number?.default || flight.identification?.callsign || '',
+                                                origin_iata: 'DUS',
+                                                destination_iata: flight.airport?.destination?.code?.iata || '',
+                                                eta: minutesAway > 0 ? minutesAway : 0,
+                                                time: time,
+                                                isArrival: false
+                                            });
+                                        }
+                                    }
+                                });
+                            }
+
+                            // Sort and return if we got data from backend
+                            if (upcoming.length > 0) {
+                                upcoming.sort((a, b) => a.time - b.time);
+                                dusUpcomingFlights = upcoming;
+                                console.log(`Found ${upcoming.length} scheduled upcoming flights from FlightRadarAPI`);
+                                return upcoming;
+                            }
+                        }
+                    } catch (err) {
+                        console.warn('FlightRadarAPI backend unavailable, falling back to DUS website API:', err.message);
+                    }
+                }
+
+                // Fallback to DUS website API
+                console.log('Using DUS website API for upcoming flights');
 
                 // Fetch arrivals if runway 23 is active (or no ATIS data)
                 if (runway23Active || fetchBoth) {
