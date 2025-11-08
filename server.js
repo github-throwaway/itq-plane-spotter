@@ -109,16 +109,16 @@ app.get('/api/flight/:id', async (req, res) => {
 
 /**
  * GET /api/airport/:iata
- * Get airport information
+ * Get airport information with arrivals and departures
  */
 app.get('/api/airport/:iata', async (req, res) => {
     try {
         const { iata } = req.params;
 
-        console.log(`Fetching airport info for: ${iata}`);
-        const airport = await frApi.getAirport(iata);
+        console.log(`Fetching airport details with flights for: ${iata}`);
+        const details = await frApi.getAirportDetails(iata);
 
-        if (!airport) {
+        if (!details) {
             return res.status(404).json({
                 error: 'Airport not found'
             });
@@ -126,10 +126,10 @@ app.get('/api/airport/:iata', async (req, res) => {
 
         res.json({
             success: true,
-            airport: airport
+            airport: details
         });
     } catch (error) {
-        console.error('Error fetching airport info:', error);
+        console.error('Error fetching airport details:', error);
         res.status(500).json({
             error: 'Failed to fetch airport information',
             message: error.message
