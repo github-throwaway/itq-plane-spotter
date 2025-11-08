@@ -378,18 +378,18 @@
         }
 
         .airport-code {
-            font-size: 1.2em;
-            font-weight: 700;
-            color: var(--white);
-            letter-spacing: 0.5px;
-            line-height: 1.2;
+            font-size: 0.75em;
+            font-weight: 500;
+            color: var(--white-semi);
+            letter-spacing: 0.3px;
+            line-height: 1.3;
         }
 
         .airport-city {
-            font-size: 0.75em;
-            color: var(--white-semi);
-            font-weight: 500;
-            line-height: 1.3;
+            font-size: 1.2em;
+            color: var(--white);
+            font-weight: 700;
+            line-height: 1.2;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
@@ -475,21 +475,22 @@
         .data-badge {
             display: inline-flex;
             align-items: center;
-            gap: 5px;
-            padding: 4px 10px;
+            gap: 6px;
+            padding: 6px 12px;
             background: rgba(255, 255, 255, 0.08);
             border-radius: 4px;
-            font-size: 0.7em;
-            font-weight: 500;
+            font-size: 1.1em;
+            font-weight: 600;
         }
 
         .data-badge-icon {
             font-size: 1em;
-            opacity: 0.6;
+            opacity: 0.7;
         }
 
         .data-badge-value {
-            color: var(--white-semi);
+            color: var(--white);
+            font-weight: 700;
         }
 
         .footer {
@@ -874,9 +875,9 @@
         const ATIS_REFRESH_INTERVAL = 300000; // 5 minutes
         let currentRefreshInterval = REFRESH_INTERVAL_NORMAL;
         const VIEW_BOUNDS = {
-            // Expanded to match what's visible on embedded FR24 map at z=13
+            // Tighter bounds to show planes closer to airport
             // Center: 51.305, 6.825
-            north: 51.380, south: 51.230, west: 6.650, east: 7.000
+            north: 51.340, south: 51.270, west: 6.730, east: 6.920
         };
         const SEARCH_BOUNDS = {
             north: VIEW_BOUNDS.north + 0.09,
@@ -1402,7 +1403,6 @@
                 // Format live data
                 const altitude = flight.altitude ? `${Math.round(flight.altitude).toLocaleString()} ft` : 'N/A';
                 const speed = flight.ground_speed ? `${Math.round(flight.ground_speed)} kts` : 'N/A';
-                const heading = flight.heading ? `${Math.round(flight.heading)}°` : 'N/A';
 
                 return `
                     <div class="flight-row ${flightStatus}" id="${rowId}">
@@ -1420,10 +1420,6 @@
                                         <span class="data-badge-icon">🚀</span>
                                         <span class="data-badge-value">${speed}</span>
                                     </div>
-                                    <div class="data-badge" title="Heading">
-                                        <span class="data-badge-icon">🧭</span>
-                                        <span class="data-badge-value">${heading}</span>
-                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -1438,13 +1434,13 @@
 
                             <div class="flight-airports">
                                 <div class="airport-info">
-                                    <div class="airport-code">${originFlag ? `${originFlag} ` : ''}${originCode}</div>
-                                    <div class="airport-city">${originCity}</div>
+                                    <div class="airport-city">${originFlag ? `${originFlag} ` : ''}${originCity}</div>
+                                    <div class="airport-code">${originCode}</div>
                                 </div>
                                 <div class="flight-arrow">✈</div>
                                 <div class="airport-info destination">
-                                    <div class="airport-code">${destFlag ? `${destFlag} ` : ''}${destCode}</div>
-                                    <div class="airport-city">${destCity}</div>
+                                    <div class="airport-city">${destFlag ? `${destFlag} ` : ''}${destCity}</div>
+                                    <div class="airport-code">${destCode}</div>
                                 </div>
                             </div>
 
