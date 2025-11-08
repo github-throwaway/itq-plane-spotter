@@ -848,8 +848,11 @@
             planespotters: (registration) => `https://api.planespotters.net/pub/photos/reg/${registration}`,
             atis: 'https://atis.guru/atis/EDDL'
         };
-        const REFRESH_INTERVAL = 60000; // 60 seconds
+        const REFRESH_INTERVAL_FAST = 15000; // 15 seconds when planes are nearby
+        const REFRESH_INTERVAL_NORMAL = 30000; // 30 seconds when moderate activity
+        const REFRESH_INTERVAL_SLOW = 60000; // 60 seconds when no activity
         const ATIS_REFRESH_INTERVAL = 300000; // 5 minutes
+        let currentRefreshInterval = REFRESH_INTERVAL_NORMAL;
         const VIEW_BOUNDS = {
             north: 51.320, south: 51.290, west: 6.750, east: 6.900
         };
@@ -1845,10 +1848,33 @@
             }
         }
 
+        // Determine optimal refresh interval based on activity
+        function getOptimalRefreshInterval() {
+            const visibleCount = fr24FlightData.length;
+            const upcomingCount = upcomingFlightData.length;
+
+            // Check if any planes are very close (ETA < 5 minutes)
+            const hasCloseFlights = upcomingFlightData.some(f => f.eta < 5);
+
+            // Check if any scheduled flights are very close
+            const hasCloseScheduled = dusUpcomingFlights.some(f => f.eta < 10);
+
+            if (visibleCount > 0 || hasCloseFlights) {
+                // Fast refresh when planes are visible or very close
+                return REFRESH_INTERVAL_FAST;
+            } else if (upcomingCount > 0 || hasCloseScheduled) {
+                // Normal refresh when planes are approaching
+                return REFRESH_INTERVAL_NORMAL;
+            } else {
+                // Slow refresh when no activity
+                return REFRESH_INTERVAL_SLOW;
+            }
+        }
+
         // Update and display flights
         async function updateAndDisplayFlights() {
             const now = Date.now();
-            const shouldFetch = (now - lastFR24Fetch > REFRESH_INTERVAL || lastFR24Fetch === 0);
+            const shouldFetch = (now - lastFR24Fetch > currentRefreshInterval || lastFR24Fetch === 0);
 
             if (shouldFetch) {
                 console.log(`Fetching new flight data (last fetch: ${Math.floor((now - lastFR24Fetch) / 1000)}s ago)`);
@@ -1856,6 +1882,13 @@
                 await fetchFlightRadar24Data();
                 await fetchDUSUpcomingFlights(); // Fetch scheduled flights from airport API
                 updateTimestamp();
+
+                // Adjust refresh interval based on current activity
+                const newInterval = getOptimalRefreshInterval();
+                if (newInterval !== currentRefreshInterval) {
+                    currentRefreshInterval = newInterval;
+                    console.log(`Adjusted refresh interval to ${currentRefreshInterval / 1000}s based on activity`);
+                }
             }
 
             await displayFlights();
@@ -1866,11 +1899,11 @@
         // Initial load
         updateAndDisplayFlights();
 
-        // Refresh flight data and display every minute
+        // Smart refresh system - checks frequently but only fetches when needed
         setInterval(() => {
-            console.log('Scheduled update triggered');
+            console.log('Update check triggered');
             updateAndDisplayFlights();
-        }, REFRESH_INTERVAL);
+        }, 5000); // Check every 5 seconds, but actual fetch depends on activity
     </script>
 </body>
 </html>
