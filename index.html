@@ -835,7 +835,7 @@
             // Direct FlightRadar24 API endpoints (work on GitHub Pages via CORS proxy)
             fr24Feed: (bounds) => `https://data-cloud.flightradar24.com/zones/fcgi/feed.js?bounds=${bounds}&faa=1&satellite=1&mlat=1&flarm=1&adsb=1&gnd=1&air=1&vehicles=0&estimated=1&maxage=14400&gliders=0&stats=0`,
             fr24Details: (flightId) => `https://data-live.flightradar24.com/clickhandler/?flight=${flightId}`,
-            fr24Airport: (iata) => `https://api.flightradar24.com/common/v1/airport.json?code=${iata}&plugin[]=&plugin[]=schedule&plugin[]=details&limit=100&page=1`,
+            fr24Airport: (iata) => `https://api.flightradar24.com/common/v1/airport.json?code=${iata}&plugin[]=schedule&plugin[]=details&limit=100&page=1`,
             // Other APIs
             planespotters: (registration) => `https://api.planespotters.net/pub/photos/reg/${registration}`,
             atis: 'https://atis.guru/atis/EDDL'
@@ -882,23 +882,22 @@
             const isArrival = isDUSArrival(flight);
             const isDeparture = isDUSDeparture(flight);
 
-            // Check if runway 23 is active for arrivals
-            const runway23Active = activeRunways.arrivals.some(rwy => rwy.startsWith('23'));
-            // Check if runway 05 is active for departures
-            const runway05Active = activeRunways.departures.some(rwy => rwy.startsWith('05'));
+            // Check if any arrival or departure runway is active
+            const hasArrivalRunway = activeRunways.arrivals.length > 0;
+            const hasDepartureRunway = activeRunways.departures.length > 0;
 
             // If no ATIS data, show all DUS flights
-            if (activeRunways.arrivals.length === 0 && activeRunways.departures.length === 0) {
+            if (!hasArrivalRunway && !hasDepartureRunway) {
                 return isArrival || isDeparture;
             }
 
-            // Show arrivals if runway 23 is active
-            if (isArrival && runway23Active) {
+            // Show arrivals if there's any arrival runway active
+            if (isArrival && hasArrivalRunway) {
                 return true;
             }
 
-            // Show departures if runway 05 is active
-            if (isDeparture && runway05Active) {
+            // Show departures if there's any departure runway active
+            if (isDeparture && hasDepartureRunway) {
                 return true;
             }
 
@@ -1041,8 +1040,15 @@
                     flights = await fetchFlightRadar24DataDirect();
                 }
 
+                // Log all flights for debugging
+                console.log(`Total flights fetched: ${flights.length}`);
+                flights.forEach(f => {
+                    console.log(`Flight ${f.flight_number || f.callsign || f.id}: ${f.origin_iata || '?'} -> ${f.destination_iata || '?'}, isDUSArr: ${isDUSArrival(f)}, isDUSDep: ${isDUSDeparture(f)}`);
+                });
+
                 // Filter flights based on runway configuration
                 const filteredFlights = flights.filter(shouldShowFlight);
+                console.log(`Filtered to ${filteredFlights.length} DUS flights after runway check`);
                 const visibleFlights = [];
                 const upcoming = [];
                 const visibleFlightIds = new Set();
