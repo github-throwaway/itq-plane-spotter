@@ -1459,11 +1459,11 @@
                 const upcoming = [];
 
                 // Check runway configuration
-                const runway23Active = activeRunways.arrivals.some(rwy => rwy.startsWith('23'));
-                const runway05Active = activeRunways.departures.some(rwy => rwy.startsWith('05'));
+                const hasArrivalRunway = activeRunways.arrivals.length > 0;
+                const hasDepartureRunway = activeRunways.departures.length > 0;
 
                 // If no ATIS data, fetch both
-                const fetchBoth = activeRunways.arrivals.length === 0 && activeRunways.departures.length === 0;
+                const fetchBoth = !hasArrivalRunway && !hasDepartureRunway;
 
                 let airportData = null;
 
@@ -1499,19 +1499,21 @@
                     return [];
                 }
 
-                // Process arrivals if runway 23 is active
-                if ((runway23Active || fetchBoth) && airportData.arrivals) {
+                // Process arrivals if runway is active
+                if ((hasArrivalRunway || fetchBoth) && airportData.arrivals) {
                     const arrivals = Array.isArray(airportData.arrivals) ? airportData.arrivals : (airportData.arrivals.data || []);
                     arrivals.forEach(flight => {
                         let time = null;
                         let flightNumber = '';
                         let originIata = '';
+                        let actualArrivalTime = null;
 
                         // Handle data from backend (FlightRadarAPI library format)
                         if (flight.time && flight.time.scheduled) {
                             time = new Date(flight.time.scheduled.arrival * 1000);
                             flightNumber = flight.identification?.number?.default || flight.identification?.callsign || '';
                             originIata = flight.airport?.origin?.code?.iata || '';
+                            actualArrivalTime = flight.time.real?.arrival ? new Date(flight.time.real.arrival * 1000) : null;
                         }
                         // Handle data from direct FR24 API
                         else if (flight.flight && flight.flight.time) {
@@ -1520,11 +1522,18 @@
                                 time = new Date(schedTime * 1000);
                                 flightNumber = flight.flight.identification?.number?.default || flight.flight.identification?.callsign || '';
                                 originIata = flight.flight.airport?.origin?.code?.iata || '';
+                                actualArrivalTime = flight.flight.time.real?.arrival ? new Date(flight.flight.time.real.arrival * 1000) : null;
                             }
                         }
 
                         if (time) {
                             const now = new Date();
+
+                            // Skip if flight has already landed
+                            if (actualArrivalTime && actualArrivalTime < now) {
+                                return;
+                            }
+
                             const minutesAway = Math.round((time - now) / 60000);
 
                             if (minutesAway > -10 && minutesAway < 120) {
@@ -1541,19 +1550,21 @@
                     });
                 }
 
-                // Process departures if runway 05 is active
-                if ((runway05Active || fetchBoth) && airportData.departures) {
+                // Process departures if runway is active
+                if ((hasDepartureRunway || fetchBoth) && airportData.departures) {
                     const departures = Array.isArray(airportData.departures) ? airportData.departures : (airportData.departures.data || []);
                     departures.forEach(flight => {
                         let time = null;
                         let flightNumber = '';
                         let destIata = '';
+                        let actualDepartureTime = null;
 
                         // Handle data from backend (FlightRadarAPI library format)
                         if (flight.time && flight.time.scheduled) {
                             time = new Date(flight.time.scheduled.departure * 1000);
                             flightNumber = flight.identification?.number?.default || flight.identification?.callsign || '';
                             destIata = flight.airport?.destination?.code?.iata || '';
+                            actualDepartureTime = flight.time.real?.departure ? new Date(flight.time.real.departure * 1000) : null;
                         }
                         // Handle data from direct FR24 API
                         else if (flight.flight && flight.flight.time) {
@@ -1562,11 +1573,18 @@
                                 time = new Date(schedTime * 1000);
                                 flightNumber = flight.flight.identification?.number?.default || flight.flight.identification?.callsign || '';
                                 destIata = flight.flight.airport?.destination?.code?.iata || '';
+                                actualDepartureTime = flight.flight.time.real?.departure ? new Date(flight.flight.time.real.departure * 1000) : null;
                             }
                         }
 
                         if (time) {
                             const now = new Date();
+
+                            // Skip if flight has already departed
+                            if (actualDepartureTime && actualDepartureTime < now) {
+                                return;
+                            }
+
                             const minutesAway = Math.round((time - now) / 60000);
 
                             if (minutesAway > -10 && minutesAway < 120) {
