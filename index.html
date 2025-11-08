@@ -811,8 +811,14 @@
         console.log('🛩️ Real-Time Aviation Intelligence');
 
         // ===== CONSTANTS =====
+        const USE_LOCAL_API = true; // Set to true to use local FlightRadarAPI backend
+        const LOCAL_API_BASE = 'http://localhost:3000/api';
         const CORS_PROXY = 'https://corsproxy.io/?';
         const API_URLS = {
+            // Local backend endpoints
+            localFlights: (north, south, west, east) => `${LOCAL_API_BASE}/flights?north=${north}&south=${south}&west=${west}&east=${east}`,
+            localFlightDetails: (flightId) => `${LOCAL_API_BASE}/flight/${flightId}`,
+            // Fallback direct endpoints (with CORS proxy)
             fr24Feed: (bounds) => `https://data-cloud.flightradar24.com/zones/fcgi/feed.js?bounds=${bounds}&faa=1&satellite=1&mlat=1&flarm=1&adsb=1&gnd=1&air=1&vehicles=0&estimated=1&maxage=14400&gliders=0&stats=0`,
             fr24Details: (flightId) => `https://data-live.flightradar24.com/clickhandler/?flight=${flightId}`,
             planespotters: (registration) => `https://api.planespotters.net/pub/photos/reg/${registration}`,
@@ -954,13 +960,79 @@
             return timeMinutes > 0 && timeMinutes < 120 ? timeMinutes : null; // Extended to 120 minutes for earlier display
         }
 
-        // Fetch live flights from FlightRadar24 feed.js API
+        // Fetch live flights from FlightRadar24 API (via local backend or direct)
         async function fetchFlightRadar24Data() {
+            try {
+                let flights = [];
+
+                if (USE_LOCAL_API) {
+                    // Use local FlightRadarAPI backend
+                    console.log(`Fetching flights from local API for expanded search area`);
+                    const apiUrl = API_URLS.localFlights(
+                        SEARCH_BOUNDS.north,
+                        SEARCH_BOUNDS.south,
+                        SEARCH_BOUNDS.west,
+                        SEARCH_BOUNDS.east
+                    );
+
+                    try {
+                        const response = await fetch(apiUrl);
+                        if (response.ok) {
+                            const data = await response.json();
+                            flights = data.flights || [];
+                            console.log(`Local API: Received ${flights.length} flights`);
+                        } else {
+                            console.warn('Local API returned error, falling back to direct API');
+                            return await fetchFlightRadar24DataDirect();
+                        }
+                    } catch (err) {
+                        console.warn('Local API unavailable, falling back to direct API:', err.message);
+                        return await fetchFlightRadar24DataDirect();
+                    }
+                } else {
+                    // Use direct API with CORS proxy
+                    return await fetchFlightRadar24DataDirect();
+                }
+
+                // Filter to only DUS flights and separate into visible and upcoming
+                const dusFlights = flights.filter(isDUSFlight);
+                const visibleFlights = [];
+                const upcoming = [];
+                const visibleFlightIds = new Set();
+
+                dusFlights.forEach(flight => {
+                    if (isInViewingArea(flight.latitude, flight.longitude)) {
+                        visibleFlights.push(flight);
+                        visibleFlightIds.add(flight.id);
+                    } else if (!flight.on_ground && !visibleFlightIds.has(flight.id)) {
+                        // Calculate ETA for flights not in viewing area
+                        const eta = calculateETA(flight.latitude, flight.longitude, flight.heading, flight.ground_speed);
+                        if (eta !== null && eta < 120) {
+                            flight.eta = eta;
+                            upcoming.push(flight);
+                        }
+                    }
+                });
+
+                console.log(`FR24: Found ${visibleFlights.length} visible flights, ${upcoming.length} upcoming flights`);
+                fr24FlightData = visibleFlights;
+                upcomingFlightData = upcoming.sort((a, b) => a.eta - b.eta);
+                lastFR24Fetch = Date.now();
+                lastDataUpdateTime = Date.now();
+                return visibleFlights;
+            } catch (error) {
+                console.error('Error fetching FR24 feed:', error);
+                return [];
+            }
+        }
+
+        // Direct API fetch (fallback method)
+        async function fetchFlightRadar24DataDirect() {
             try {
                 const bounds = `${SEARCH_BOUNDS.north},${SEARCH_BOUNDS.south},${SEARCH_BOUNDS.west},${SEARCH_BOUNDS.east}`;
                 const apiUrl = API_URLS.fr24Feed(bounds);
 
-                console.log(`Fetching FR24 feed data for expanded search area: ${bounds}`);
+                console.log(`Fetching FR24 feed data directly for expanded search area: ${bounds}`);
                 const response = await fetchWithProxy(apiUrl);
 
                 if (response.ok) {
@@ -997,45 +1069,34 @@
                         flights.push(flightData);
                     }
 
-                    // Filter to only DUS flights and separate into visible and upcoming
-                    const dusFlights = flights.filter(isDUSFlight);
-                    const visibleFlights = [];
-                    const upcoming = [];
-                    const visibleFlightIds = new Set();
-
-                    dusFlights.forEach(flight => {
-                        if (isInViewingArea(flight.latitude, flight.longitude)) {
-                            visibleFlights.push(flight);
-                            visibleFlightIds.add(flight.id);
-                        } else if (!flight.on_ground && !visibleFlightIds.has(flight.id)) {
-                            // Calculate ETA for flights not in viewing area
-                            const eta = calculateETA(flight.latitude, flight.longitude, flight.heading, flight.ground_speed);
-                            if (eta !== null && eta < 120) {
-                                flight.eta = eta;
-                                upcoming.push(flight);
-                            }
-                        }
-                    });
-
-                    console.log(`FR24: Found ${visibleFlights.length} visible flights, ${upcoming.length} upcoming flights`);
-                    fr24FlightData = visibleFlights;
-                    upcomingFlightData = upcoming.sort((a, b) => a.eta - b.eta);
-                    lastFR24Fetch = Date.now();
-                    lastDataUpdateTime = Date.now();
-                    return visibleFlights;
+                    return flights;
                 }
 
                 console.log('FR24: Failed to fetch feed data');
                 return [];
             } catch (error) {
-                console.error('Error fetching FR24 feed:', error);
+                console.error('Error fetching FR24 feed direct:', error);
                 return [];
             }
         }
 
-        // Fetch detailed flight information from FR24 clickhandler API
+        // Fetch detailed flight information from FR24 API
         async function fetchFlightDetails(flightId) {
             try {
+                if (USE_LOCAL_API) {
+                    // Try local API first
+                    try {
+                        const response = await fetch(API_URLS.localFlightDetails(flightId));
+                        if (response.ok) {
+                            const data = await response.json();
+                            return data.flight || null;
+                        }
+                    } catch (err) {
+                        console.warn(`Local API unavailable for flight details, using fallback`);
+                    }
+                }
+
+                // Fallback to direct API
                 const response = await fetchWithProxy(API_URLS.fr24Details(flightId));
                 return response.ok ? await response.json() : null;
             } catch (error) {
