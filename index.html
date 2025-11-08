@@ -464,35 +464,6 @@
             box-shadow: 0 2px 8px rgba(255, 107, 53, 0.25);
         }
 
-        /* Live data badges */
-        .live-data-container {
-            display: flex;
-            gap: 8px;
-            flex-wrap: wrap;
-            margin-top: 6px;
-        }
-
-        .data-badge {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            padding: 6px 12px;
-            background: rgba(255, 255, 255, 0.08);
-            border-radius: 4px;
-            font-size: 1.1em;
-            font-weight: 600;
-        }
-
-        .data-badge-icon {
-            font-size: 1em;
-            opacity: 0.7;
-        }
-
-        .data-badge-value {
-            color: var(--white);
-            font-weight: 700;
-        }
-
         .footer {
             background: var(--darker-blue);
             color: var(--white);
@@ -576,7 +547,34 @@
             height: 120px;
             background: var(--primary-blue);
             z-index: 100;
-            pointer-events: none;
+            pointer-events: auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 30px;
+            padding: 20px;
+        }
+
+        .map-stat {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .map-stat-value {
+            font-size: 2em;
+            font-weight: 700;
+            color: var(--white);
+            line-height: 1;
+        }
+
+        .map-stat-label {
+            font-size: 0.75em;
+            color: var(--white-semi);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-weight: 600;
         }
 
         .metar-container {
@@ -824,7 +822,20 @@
                 <h2 class="section-title" style="cursor: pointer;" onclick="resetMap()">Live Map</h2>
                 <div class="map-container">
                     <iframe id="map-iframe" src="https://www.flightradar24.com/simple_index.php?lat=51.305&lon=6.825&z=13" allowfullscreen></iframe>
-                    <div class="map-badges-blocker" onclick="resetMap()" style="cursor: pointer; pointer-events: auto;"></div>
+                    <div class="map-badges-blocker" onclick="resetMap()" style="cursor: pointer;">
+                        <div class="map-stat">
+                            <div class="map-stat-value" id="visible-count">0</div>
+                            <div class="map-stat-label">Visible</div>
+                        </div>
+                        <div class="map-stat">
+                            <div class="map-stat-value" id="upcoming-count">0</div>
+                            <div class="map-stat-label">Upcoming</div>
+                        </div>
+                        <div class="map-stat">
+                            <div class="map-stat-value" id="next-arrival">--</div>
+                            <div class="map-stat-label">Next (min)</div>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -1424,15 +1435,17 @@
                             ` : ''}
 
                             <div class="flight-airports">
-                                <div class="airport-info">
-                                    <div class="airport-city">${originCity}</div>
-                                    <div class="airport-code">${originFlag ? `${originFlag} ` : ''}${originCode}</div>
-                                </div>
-                                <div class="flight-arrow">✈</div>
-                                <div class="airport-info destination">
-                                    <div class="airport-city">${destCity}</div>
-                                    <div class="airport-code">${destFlag ? `${destFlag} ` : ''}${destCode}</div>
-                                </div>
+                                ${isArriving ? `
+                                    <div class="airport-info" style="text-align: center;">
+                                        <div class="airport-city">${originCity}</div>
+                                        <div class="airport-code">${originFlag ? `${originFlag} ` : ''}${originCode}</div>
+                                    </div>
+                                ` : `
+                                    <div class="airport-info destination" style="text-align: center;">
+                                        <div class="airport-city">${destCity}</div>
+                                        <div class="airport-code">${destFlag ? `${destFlag} ` : ''}${destCode}</div>
+                                    </div>
+                                `}
                             </div>
 
                             <div class="flight-times">
@@ -1442,11 +1455,11 @@
                                             <div class="time-block">
                                                 <div class="time-label">🛫 Departure</div>
                                                 <div class="time-value-container">
-                                                    ${scheduledDep ? `
-                                                        <div class="time-value">${formatTime(scheduledDep)}</div>
-                                                        ${actualDep && scheduledDep !== actualDep ? `<div class="time-value crossed-out" style="font-size: 0.85em;">${formatTime(actualDep)}</div>` : ''}
-                                                    ` : actualDep ? `
+                                                    ${actualDep ? `
                                                         <div class="time-value">${formatTime(actualDep)}</div>
+                                                        ${scheduledDep && scheduledDep !== actualDep ? `<div class="time-value crossed-out" style="font-size: 0.85em;">${formatTime(scheduledDep)}</div>` : ''}
+                                                    ` : scheduledDep ? `
+                                                        <div class="time-value">${formatTime(scheduledDep)}</div>
                                                     ` : ''}
                                                 </div>
                                             </div>
@@ -1455,11 +1468,11 @@
                                             <div class="time-block">
                                                 <div class="time-label">🛬 Arrival</div>
                                                 <div class="time-value-container">
-                                                    ${scheduledArr ? `
-                                                        <div class="time-value">${formatTime(scheduledArr)}</div>
-                                                        ${estimatedArr && scheduledArr !== estimatedArr ? `<div class="time-value crossed-out" style="font-size: 0.85em;">${formatTime(estimatedArr)}</div>` : ''}
-                                                    ` : estimatedArr ? `
+                                                    ${estimatedArr ? `
                                                         <div class="time-value">${formatTime(estimatedArr)}</div>
+                                                        ${scheduledArr && scheduledArr !== estimatedArr ? `<div class="time-value crossed-out" style="font-size: 0.85em;">${formatTime(scheduledArr)}</div>` : ''}
+                                                    ` : scheduledArr ? `
+                                                        <div class="time-value">${formatTime(scheduledArr)}</div>
                                                     ` : ''}
                                                 </div>
                                             </div>
@@ -1468,14 +1481,16 @@
                                 ` : ''}
                             </div>
 
-                            <div class="live-data-container">
-                                <div class="data-badge" title="Altitude">
-                                    <span class="data-badge-icon">⬆️</span>
-                                    <span class="data-badge-value">${altitude}</span>
-                                </div>
-                                <div class="data-badge" title="Ground Speed">
-                                    <span class="data-badge-icon">🚀</span>
-                                    <span class="data-badge-value">${speed}</span>
+                            <div class="flight-times" style="margin-top: 12px;">
+                                <div class="merged-time-block">
+                                    <div class="time-block">
+                                        <div class="time-label">⬆️ Altitude</div>
+                                        <div class="time-value">${altitude}</div>
+                                    </div>
+                                    <div class="time-block">
+                                        <div class="time-label">🚀 Speed</div>
+                                        <div class="time-value">${speed}</div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -1484,6 +1499,15 @@
             }).join('');
 
             container.innerHTML = flightsHtml;
+
+            // Update map stats
+            document.getElementById('visible-count').textContent = enrichedFlights.length;
+            document.getElementById('upcoming-count').textContent = dusUpcomingFlights.length;
+            if (dusUpcomingFlights.length > 0 && dusUpcomingFlights[0].eta !== undefined) {
+                document.getElementById('next-arrival').textContent = dusUpcomingFlights[0].eta;
+            } else {
+                document.getElementById('next-arrival').textContent = '--';
+            }
 
             // Load photos asynchronously only for flights without cached photos
             enrichedFlights.forEach(async (flight) => {
