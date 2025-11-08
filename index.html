@@ -176,11 +176,13 @@
             justify-content: space-between;
             align-items: center;
             transition: all 0.2s ease;
+            cursor: pointer;
         }
 
         .upcoming-row:hover {
             background: rgba(0, 0, 0, 0.25);
             border-color: var(--white-semi);
+            transform: translateX(4px);
         }
 
         .upcoming-info {
@@ -794,7 +796,7 @@
             <div class="map-panel">
                 <h2 class="section-title">Live Map</h2>
                 <div class="map-container">
-                    <iframe src="https://www.flightradar24.com/simple_index.php?lat=51.305&lon=6.825&z=13" allowfullscreen></iframe>
+                    <iframe id="map-iframe" src="https://www.flightradar24.com/simple_index.php?lat=51.305&lon=6.825&z=13" allowfullscreen></iframe>
                     <div class="map-badges-blocker"></div>
                 </div>
             </div>
@@ -1621,6 +1623,38 @@
             }
         }
 
+        // Center map on a specific flight
+        function centerMapOnFlight(flightNumber, originIata, destIata) {
+            // Find the flight in upcomingFlightData (which has coordinates)
+            let flight = upcomingFlightData.find(f => {
+                const fNum = f.flight_number || f.callsign || '';
+                return fNum.trim() === flightNumber.trim() &&
+                       f.origin_iata === originIata &&
+                       f.destination_iata === destIata;
+            });
+
+            // If not found in upcoming, check visible flights
+            if (!flight) {
+                flight = fr24FlightData.find(f => {
+                    const fNum = f.flight_number || f.callsign || '';
+                    return fNum.trim() === flightNumber.trim() &&
+                           f.origin_iata === originIata &&
+                           f.destination_iata === destIata;
+                });
+            }
+
+            if (flight && flight.latitude && flight.longitude) {
+                const mapIframe = document.getElementById('map-iframe');
+                if (mapIframe) {
+                    const newSrc = `https://www.flightradar24.com/simple_index.php?lat=${flight.latitude}&lon=${flight.longitude}&z=11`;
+                    mapIframe.src = newSrc;
+                    console.log(`Centered map on ${flightNumber} at ${flight.latitude}, ${flight.longitude}`);
+                }
+            } else {
+                console.warn(`Could not find coordinates for flight ${flightNumber}`);
+            }
+        }
+
         // Display upcoming flights from DUS Airport API
         function displayUpcomingFlights() {
             const container = document.getElementById('upcoming-container');
@@ -1660,23 +1694,14 @@
                 const route = `${flight.origin_iata || '?'} ✈ ${flight.destination_iata || '?'}`;
                 const eta = flight.eta !== undefined ? flight.eta : '?';
 
-                // Calculate approximate distance based on ETA and average approach speed
-                // Average approach speed: ~250 knots = ~463 km/h
-                let distance = '?';
-                if (typeof eta === 'number') {
-                    const distanceKm = Math.round((eta / 60) * 463);
-                    distance = `${distanceKm} km`;
-                }
-
                 return `
-                    <div class="upcoming-row">
+                    <div class="upcoming-row" style="cursor: pointer;" onclick="centerMapOnFlight('${flightNumber}', '${flight.origin_iata || ''}', '${flight.destination_iata || ''}')">
                         <div class="upcoming-info">
                             <div class="upcoming-flight-number">✈️ ${flightNumber}</div>
                             <div class="upcoming-route">${route}</div>
                         </div>
                         <div style="text-align: right;">
                             <div class="upcoming-eta">~${eta} min</div>
-                            <div class="upcoming-eta-label">${distance}</div>
                         </div>
                     </div>
                 `;
