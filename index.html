@@ -570,38 +570,78 @@
             font-weight: 600;
         }
 
-        /* Office location pin overlay */
+        /* Office location pin overlay - Google Maps style */
         .office-pin {
             position: absolute;
             z-index: 50;
             pointer-events: none;
+            width: 30px;
+            height: 42px;
             transform: translate(-50%, -100%);
-            filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+            filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.4));
+            transition: opacity 0.3s ease;
         }
 
         .office-pin-icon {
-            font-size: 2em;
-            animation: pinBounce 2s ease-in-out infinite;
+            position: relative;
+            width: 30px;
+            height: 42px;
+        }
+
+        /* Google Maps style pin shape */
+        .office-pin-icon::before {
+            content: '';
+            position: absolute;
+            width: 30px;
+            height: 30px;
+            background: #EA4335;
+            border-radius: 50% 50% 50% 0;
+            transform: rotate(-45deg);
+            top: 0;
+            left: 0;
+            border: 2px solid #fff;
+            box-sizing: border-box;
+        }
+
+        /* White circle in center of pin */
+        .office-pin-icon::after {
+            content: '';
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            background: #fff;
+            border-radius: 50%;
+            top: 7px;
+            left: 8px;
+            z-index: 1;
         }
 
         .office-pin-label {
             position: absolute;
-            bottom: -25px;
+            bottom: -28px;
             left: 50%;
             transform: translateX(-50%);
-            background: var(--orange);
+            background: #EA4335;
             color: var(--white);
-            padding: 4px 8px;
+            padding: 4px 10px;
             border-radius: 4px;
-            font-size: 0.7em;
+            font-size: 0.75em;
             font-weight: 600;
             white-space: nowrap;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
         }
 
-        @keyframes pinBounce {
-            0%, 100% { transform: translateY(0); }
-            50% { transform: translateY(-5px); }
+        .office-pin-label::before {
+            content: '';
+            position: absolute;
+            top: -4px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 0;
+            height: 0;
+            border-left: 5px solid transparent;
+            border-right: 5px solid transparent;
+            border-bottom: 5px solid #EA4335;
         }
 
         .metar-container {
@@ -867,7 +907,7 @@
                     <iframe id="map-iframe" src="https://www.flightradar24.com/simple_index.php?lat=51.305&lon=6.825&z=13" allowfullscreen></iframe>
                     <!-- Office Location Pin -->
                     <div class="office-pin" id="office-pin">
-                        <div class="office-pin-icon">📍</div>
+                        <div class="office-pin-icon"></div>
                         <div class="office-pin-label">Office</div>
                     </div>
                     <div class="map-badges-blocker" onclick="resetMap()" style="cursor: pointer;">
@@ -1818,6 +1858,13 @@
 
         // Center map on a specific flight
         async function centerMapOnFlight(flightNumber, originIata, destIata) {
+            // Hide office pin since map will move
+            isMapAtDefaultPosition = false;
+            const officePin = document.getElementById('office-pin');
+            if (officePin) {
+                officePin.style.opacity = '0';
+            }
+
             // Find the flight in upcomingFlightData (which has coordinates)
             let flight = upcomingFlightData.find(f => {
                 const fNum = f.flight_number || f.callsign || '';
@@ -1886,21 +1933,35 @@
             }
         }
 
+        // Track if map is at default position
+        let isMapAtDefaultPosition = true;
+
         // Reset map to default position
         function resetMap() {
             const mapIframe = document.getElementById('map-iframe');
             if (mapIframe) {
                 mapIframe.src = 'https://www.flightradar24.com/simple_index.php?lat=51.305&lon=6.825&z=13';
+                isMapAtDefaultPosition = true;
                 console.log('Map reset to default position');
+                // Show pin after a short delay to allow map to load
+                setTimeout(() => {
+                    positionOfficePin();
+                }, 500);
             }
         }
 
-        // Position office pin on the map
+        // Position office pin on the map using Web Mercator projection
         function positionOfficePin() {
             const officePin = document.getElementById('office-pin');
             const mapContainer = document.querySelector('.map-container');
 
             if (!officePin || !mapContainer) return;
+
+            // Only show pin when map is at default position
+            if (!isMapAtDefaultPosition) {
+                officePin.style.opacity = '0';
+                return;
+            }
 
             // Office coordinates
             const officeLat = 51.28781309211284;
@@ -1909,37 +1970,42 @@
             // Map center (Düsseldorf Airport)
             const mapCenterLat = 51.305;
             const mapCenterLon = 6.825;
+            const zoom = 13;
 
             // Get map container dimensions
             const mapWidth = mapContainer.offsetWidth;
             const mapHeight = mapContainer.offsetHeight;
 
-            // Calculate approximate zoom 13 scale (pixels per degree)
-            // At zoom 13, approximately 256 * 2^13 / 360 pixels per degree of longitude at equator
-            // Adjusted for latitude ~51° N
-            const zoom = 13;
-            const latScale = (256 * Math.pow(2, zoom)) / 360;
-            const lonScale = latScale * Math.cos(mapCenterLat * Math.PI / 180);
+            // Web Mercator projection formulas
+            function latToY(lat, zoom) {
+                const latRad = lat * Math.PI / 180;
+                const mercN = Math.log(Math.tan(Math.PI / 4 + latRad / 2));
+                return (1 - mercN / Math.PI) * Math.pow(2, zoom - 1) * 256;
+            }
 
-            // Calculate offset in degrees
-            const latDiff = mapCenterLat - officeLat; // positive = office is south
-            const lonDiff = officeLon - mapCenterLon; // negative = office is west
+            function lonToX(lon, zoom) {
+                return (lon + 180) / 360 * Math.pow(2, zoom) * 256;
+            }
 
-            // Convert to pixels from center
-            const pixelX = (lonDiff * lonScale);
-            const pixelY = (latDiff * latScale);
+            // Calculate pixel positions for both points
+            const centerX_world = lonToX(mapCenterLon, zoom);
+            const centerY_world = latToY(mapCenterLat, zoom);
+            const officeX_world = lonToX(officeLon, zoom);
+            const officeY_world = latToY(officeLat, zoom);
 
-            // Position from center of map
-            const centerX = mapWidth / 2;
-            const centerY = mapHeight / 2;
+            // Calculate offset in pixels
+            const offsetX = officeX_world - centerX_world;
+            const offsetY = officeY_world - centerY_world;
 
-            const pinX = centerX + pixelX;
-            const pinY = centerY + pixelY;
+            // Position from center of visible map
+            const pinX = (mapWidth / 2) + offsetX;
+            const pinY = (mapHeight / 2) + offsetY;
 
             officePin.style.left = pinX + 'px';
             officePin.style.top = pinY + 'px';
+            officePin.style.opacity = '1';
 
-            console.log(`Office pin positioned at ${pinX}px, ${pinY}px (${officeLat}, ${officeLon})`);
+            console.log(`Office pin positioned at ${Math.round(pinX)}px, ${Math.round(pinY)}px (offset: ${Math.round(offsetX)}px, ${Math.round(offsetY)}px)`);
         }
 
         // Position pin on page load and window resize
