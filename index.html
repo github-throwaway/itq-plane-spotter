@@ -1492,7 +1492,14 @@
                 const flightNumber = flight.flight_number || 'Unknown';
                 const route = `${flight.origin_iata || '?'} ✈ ${flight.destination_iata || '?'}`;
                 const eta = flight.eta !== undefined ? flight.eta : '?';
-                const label = index === 0 ? '⏱️ Next' : `+${eta} min`;
+
+                // Calculate approximate distance based on ETA and average approach speed
+                // Average approach speed: ~250 knots = ~463 km/h
+                let distance = '?';
+                if (typeof eta === 'number') {
+                    const distanceKm = Math.round((eta / 60) * 463);
+                    distance = `${distanceKm} km`;
+                }
 
                 return `
                     <div class="upcoming-row">
@@ -1502,7 +1509,7 @@
                         </div>
                         <div style="text-align: right;">
                             <div class="upcoming-eta">~${eta} min</div>
-                            <div class="upcoming-eta-label">${label}</div>
+                            <div class="upcoming-eta-label">${distance}</div>
                         </div>
                     </div>
                 `;
@@ -1526,22 +1533,18 @@
 
             // Determine primary runway - prefer arrivals for runway 23, departures for runway 05
             let runway = '';
-            let arrivalRunways = [];
-            let departureRunways = [];
 
             if (activeRunways.arrivals.some(rwy => rwy.startsWith('23'))) {
                 // Get the full runway designation (e.g., 23L, 23R)
-                arrivalRunways = activeRunways.arrivals.filter(rwy => rwy.startsWith('23'));
+                const arrivalRunways = activeRunways.arrivals.filter(rwy => rwy.startsWith('23'));
                 runway = arrivalRunways[0]; // Use full designation
             } else if (activeRunways.departures.some(rwy => rwy.startsWith('05'))) {
                 // Get the full runway designation (e.g., 05L, 05R)
-                departureRunways = activeRunways.departures.filter(rwy => rwy.startsWith('05'));
+                const departureRunways = activeRunways.departures.filter(rwy => rwy.startsWith('05'));
                 runway = departureRunways[0]; // Use full designation
             } else if (activeRunways.arrivals.length > 0) {
-                arrivalRunways = activeRunways.arrivals;
                 runway = activeRunways.arrivals[0]; // Full designation
             } else if (activeRunways.departures.length > 0) {
-                departureRunways = activeRunways.departures;
                 runway = activeRunways.departures[0]; // Full designation
             }
 
@@ -1558,28 +1561,12 @@
             const baseRunway = runway.substring(0, 2);
             const runwayImageUrl = `https://metar-taf.com/images/rwy/3d-${baseRunway}.svg`;
 
-            // Build runway info text
-            let runwayInfoHtml = '';
-            if (arrivalRunways.length > 0) {
-                runwayInfoHtml += `<div style="margin-bottom: 8px;">
-                    <span style="color: var(--white-semi); font-size: 0.85em;">Arrivals:</span>
-                    <span style="color: var(--white); font-weight: 600; margin-left: 8px;">${arrivalRunways.join(', ')}</span>
-                </div>`;
-            }
-            if (departureRunways.length > 0) {
-                runwayInfoHtml += `<div style="margin-bottom: 8px;">
-                    <span style="color: var(--white-semi); font-size: 0.85em;">Departures:</span>
-                    <span style="color: var(--white); font-weight: 600; margin-left: 8px;">${departureRunways.join(', ')}</span>
-                </div>`;
-            }
-
             container.innerHTML = `
-                <div style="background: rgba(0, 0, 0, 0.15); padding: 15px; border-radius: 8px; border: 1px solid var(--gray-200-alpha);">
+                <div style="background: rgba(0, 0, 0, 0.15); padding: 15px; border-radius: 8px; border: 1px solid var(--gray-200-alpha); text-align: center;">
                     <div style="font-size: 1.1em; font-weight: 600; color: var(--white); margin-bottom: 10px;">
-                        Active Runway ${baseRunway}
+                        Active Runway ${runway}
                     </div>
-                    ${runwayInfoHtml}
-                    <img src="${runwayImageUrl}" alt="Runway ${baseRunway}" style="width: 100%; max-width: 250px; height: auto; margin-top: 10px;" onerror="this.parentElement.innerHTML='<div style=\'color: var(--white-semi); padding: 20px;\'>Runway ${runway} in use</div>'">
+                    <img src="${runwayImageUrl}" alt="Runway ${runway}" style="width: 100%; max-width: 250px; height: auto;" onerror="this.parentElement.innerHTML='<div style=\'color: var(--white-semi); padding: 20px;\'>Runway ${runway} in use</div>'">
                 </div>
             `;
         }
