@@ -342,7 +342,7 @@
         .flight-details {
             display: flex;
             flex-direction: column;
-            gap: 16px;
+            gap: 8px;
             padding-top: 16px;
             border-top: 1px solid var(--gray-200-alpha);
         }
@@ -350,7 +350,7 @@
         .flight-airports {
             display: flex;
             flex-direction: column;
-            gap: 8px;
+            gap: 4px;
             position: relative;
         }
 
@@ -365,40 +365,49 @@
 
         .airport-content {
             display: flex;
-            align-items: center;
-            gap: 12px;
-            justify-content: space-between;
+            align-items: stretch;
+            gap: 0;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 6px;
+            position: relative;
+            overflow: visible;
         }
 
         .airport-box {
             display: flex;
             gap: 12px;
-            background: rgba(0, 0, 0, 0.2);
             padding: 12px;
-            border-radius: 6px;
             flex: 1;
             min-width: 0;
+            align-items: center;
+        }
+
+        .airport-box:first-child {
+            border-right: 1px solid rgba(255, 255, 255, 0.1);
         }
 
         .route-separator {
-            font-size: 1.5em;
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 1em;
             color: var(--white);
-            padding: 4px 8px;
             display: flex;
             align-items: center;
             justify-content: center;
-            flex-shrink: 0;
+            z-index: 2;
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 50%;
+            width: 2em;
+            height: 2em;
+            border: 2px solid rgba(255, 255, 255, 0.3);
         }
 
         .route-separator span {
             display: flex;
             align-items: center;
             justify-content: center;
-            width: 2.5em;
-            height: 2.5em;
-            background: rgba(255, 255, 255, 0.4);
-            border-radius: 50%;
-            border: 2px solid rgba(255, 255, 255, 0.5);
         }
 
         .airport-flag-container {
@@ -723,41 +732,25 @@
                 grid-row: 3;
             }
 
-            .airport-content {
-                flex-wrap: nowrap;
-            }
-
             .airport-box {
-                flex-direction: row;
                 padding: 10px;
+                gap: 10px;
             }
 
             .route-separator {
-                font-size: 1.2em;
-                padding: 0px 6px;
-            }
-
-            .route-separator span {
-                width: 2.2em;
-                height: 2.2em;
+                font-size: 0.9em;
+                width: 1.8em;
+                height: 1.8em;
             }
 
             .airport-flag {
-                font-size: 2.5em;
+                font-size: 2.2em;
             }
         }
 
         /* Fix layout issues between 800px and 1200px */
         @media (max-width: 1200px) and (min-width: 800px) {
-            .airport-content {
-                display: flex;
-                flex-direction: row;
-                align-items: stretch;
-            }
-
             .airport-box {
-                display: flex;
-                flex-direction: row;
                 gap: 10px;
             }
 
@@ -886,27 +879,30 @@
             }
 
             .airport-box {
-                padding: 10px;
-                gap: 10px;
+                padding: 8px;
+                gap: 8px;
             }
 
             .route-separator {
-                font-size: 1em;
-                padding: 0px 4px;
-            }
-
-            .route-separator span {
-                width: 1.8em;
-                height: 1.8em;
-            }
-
-            .airport-content {
-                gap: 6px;
-                flex-direction: column;
+                font-size: 0.85em;
+                width: 1.7em;
+                height: 1.7em;
             }
 
             .airport-flag {
-                font-size: 2em;
+                font-size: 1.8em;
+            }
+
+            .airport-code {
+                font-size: 0.65em;
+            }
+
+            .airport-city {
+                font-size: 0.85em;
+            }
+
+            .airport-country {
+                font-size: 0.7em;
             }
 
             .flight-times,
@@ -1021,27 +1017,30 @@
             }
 
             .airport-box {
-                padding: 8px;
-                gap: 8px;
+                padding: 6px;
+                gap: 6px;
             }
 
             .route-separator {
-                font-size: 0.85em;
-                padding: 0px 2px;
-            }
-
-            .route-separator span {
-                width: 1.8em;
-                height: 1.8em;
-            }
-
-            .airport-content {
-                gap: 4px;
-                flex-direction: column;
+                font-size: 0.75em;
+                width: 1.6em;
+                height: 1.6em;
             }
 
             .airport-flag {
-                font-size: 1.8em;
+                font-size: 1.5em;
+            }
+
+            .airport-code {
+                font-size: 0.6em;
+            }
+
+            .airport-city {
+                font-size: 0.75em;
+            }
+
+            .airport-country {
+                font-size: 0.65em;
             }
         }
 
