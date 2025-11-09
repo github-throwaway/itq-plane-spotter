@@ -1417,28 +1417,8 @@
             const dateStr = now.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
             document.getElementById('global-last-update').textContent = `${dateStr} at ${timeStr}`;
 
-            if (!fr24FlightData || fr24FlightData.length === 0) {
-                container.innerHTML = `
-                    <div class="no-flights">
-                        <div class="plane-icon">✈️</div>
-                        <div class="no-flights-title">No Visible Planes</div>
-                    </div>
-                `;
-
-                // Update map stats even when no flights
-                document.getElementById('visible-count').textContent = '0';
-                document.getElementById('upcoming-count').textContent = dusUpcomingFlights?.length || 0;
-                if (dusUpcomingFlights?.length > 0 && dusUpcomingFlights[0].eta !== undefined) {
-                    document.getElementById('next-arrival').textContent = dusUpcomingFlights[0].eta;
-                } else {
-                    document.getElementById('next-arrival').textContent = '--';
-                }
-
-                return;
-            }
-
             // Filter to only DUS flights that are in the viewing area and exclude landed planes
-            const dusOnlyFlights = fr24FlightData.filter(flight => {
+            const dusOnlyFlights = (fr24FlightData || []).filter(flight => {
                 const isArrival = isDUSArrival(flight);
                 const isDeparture = isDUSDeparture(flight);
 
@@ -1483,6 +1463,27 @@
                         }
                     }
                 });
+            }
+
+            // Check if we have any flights after filtering
+            if (dusOnlyFlights.length === 0) {
+                container.innerHTML = `
+                    <div class="no-flights">
+                        <div class="plane-icon">✈️</div>
+                        <div class="no-flights-title">No Visible Planes</div>
+                    </div>
+                `;
+
+                // Update map stats even when no flights
+                document.getElementById('visible-count').textContent = '0';
+                document.getElementById('upcoming-count').textContent = dusUpcomingFlights?.length || 0;
+                if (dusUpcomingFlights?.length > 0 && dusUpcomingFlights[0].eta !== undefined) {
+                    document.getElementById('next-arrival').textContent = dusUpcomingFlights[0].eta;
+                } else {
+                    document.getElementById('next-arrival').textContent = '--';
+                }
+
+                return;
             }
 
             // Get current flight IDs for cache cleanup
