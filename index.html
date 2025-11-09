@@ -296,6 +296,9 @@
             color: var(--white);
             letter-spacing: -0.5px;
             line-height: 1;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
         }
 
         .flight-airline {
@@ -304,6 +307,9 @@
             font-weight: 500;
             text-transform: uppercase;
             letter-spacing: 0.5px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
         }
 
         .flight-aircraft {
@@ -328,6 +334,9 @@
             color: var(--white);
             font-weight: 600;
             margin-left: 4px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
         }
 
         .flight-details {
@@ -367,6 +376,23 @@
             color: var(--white-semi);
             align-self: center;
             padding-top: 4px;
+            position: relative;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .route-separator::before,
+        .route-separator::after {
+            content: '';
+            flex: 1;
+            height: 2px;
+            background: linear-gradient(to right, var(--white-semi) 0%, transparent 100%);
+            border-radius: 1px;
+        }
+
+        .route-separator::after {
+            background: linear-gradient(to left, var(--white-semi) 0%, transparent 100%);
         }
 
         .airport-flag-container {
@@ -404,12 +430,18 @@
             color: var(--white);
             font-weight: 700;
             line-height: 1.2;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
         }
 
         .airport-country {
             font-size: 0.85em;
             color: var(--white-semi);
             font-weight: 500;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
         }
 
         .flight-times {
@@ -442,6 +474,9 @@
             color: var(--white);
             font-weight: 700;
             line-height: 1;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
         }
         
         .time-value.crossed-out {
@@ -708,6 +743,12 @@
                 min-height: 400px;
             }
 
+            .flights-container {
+                max-height: none;
+                overflow-y: visible;
+                min-height: 200px;
+            }
+
             .map-panel {
                 min-height: 60vh;
                 display: flex;
@@ -786,6 +827,7 @@
             .route-separator {
                 font-size: 1.2em;
                 padding-top: 0px;
+                gap: 4px;
             }
 
             .airport-content {
@@ -912,6 +954,7 @@
             .route-separator {
                 font-size: 1em;
                 padding-top: 0px;
+                gap: 3px;
             }
 
             .airport-content {
@@ -1407,6 +1450,11 @@
 
                 // If it's an arrival to DUS and on the ground, it has landed - don't show it
                 if (isArrival && flight.on_ground) {
+                    return false;
+                }
+
+                // Filter out planes with N/A altitude (grounded or no altitude data)
+                if (!flight.altitude || flight.altitude === 0) {
                     return false;
                 }
 
