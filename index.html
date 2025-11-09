@@ -286,7 +286,7 @@
         .flight-info {
             display: flex;
             flex-direction: column;
-            gap: 8px;
+            gap: 4px;
             flex: 1;
         }
 
@@ -313,7 +313,7 @@
             display: flex;
             align-items: center;
             gap: 6px;
-            margin-top: 4px;
+            margin-top: 2px;
         }
 
         .flight-aircraft-type {
@@ -337,6 +337,8 @@
             background: rgba(0, 0, 0, 0.2);
             padding: 12px;
             border-radius: 6px;
+            border-left: 4px solid rgba(255, 255, 255, 0.15);
+            position: relative;
         }
 
         .origin-label {
@@ -423,7 +425,7 @@
         
         .merged-time-block {
             display: grid;
-            grid-template-columns: 1fr 1fr;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
             gap: 12px;
         }
         
@@ -905,7 +907,6 @@
 
     <script>
         console.log('%c skITQ ', 'background: #0f172a; color: #ff6b35; padding: 6px 12px; border-radius: 4px; font-weight: bold; font-family: Inter');
-        console.log('🛩️ Real-Time Aviation Intelligence');
 
         // ===== CONSTANTS =====
         const USE_LOCAL_API = false; // Set to true only if running backend locally (npm start)
@@ -1455,40 +1456,33 @@
                             </div>
 
                             <div class="flight-times">
-                                ${(scheduledDep || actualDep || scheduledArr || estimatedArr) ? `
-                                    <div class="merged-time-block">
-                                        ${(scheduledDep || actualDep) ? `
-                                            <div class="time-block">
-                                                <div class="time-label">🛫 Departure</div>
-                                                <div class="time-value-container">
-                                                    ${scheduledDep && actualDep && scheduledDep !== actualDep ? `<div class="time-value crossed-out" style="font-size: 0.85em;">${formatTime(scheduledDep)}</div>` : ''}
-                                                    ${actualDep ? `
-                                                        <div class="time-value">${formatTime(actualDep)}</div>
-                                                    ` : scheduledDep ? `
-                                                        <div class="time-value">${formatTime(scheduledDep)}</div>
-                                                    ` : ''}
-                                                </div>
-                                            </div>
-                                        ` : ''}
-                                        ${(scheduledArr || estimatedArr) ? `
-                                            <div class="time-block">
-                                                <div class="time-label">🛬 Arrival</div>
-                                                <div class="time-value-container">
-                                                    ${scheduledArr && estimatedArr && scheduledArr !== estimatedArr ? `<div class="time-value crossed-out" style="font-size: 0.85em;">${formatTime(scheduledArr)}</div>` : ''}
-                                                    ${estimatedArr ? `
-                                                        <div class="time-value">${formatTime(estimatedArr)}</div>
-                                                    ` : scheduledArr ? `
-                                                        <div class="time-value">${formatTime(scheduledArr)}</div>
-                                                    ` : ''}
-                                                </div>
-                                            </div>
-                                        ` : ''}
-                                    </div>
-                                ` : ''}
-                            </div>
-
-                            <div class="flight-times">
                                 <div class="merged-time-block">
+                                    ${(scheduledDep || actualDep) ? `
+                                        <div class="time-block">
+                                            <div class="time-label">🛫 Departure</div>
+                                            <div class="time-value-container">
+                                                ${scheduledDep && actualDep && scheduledDep !== actualDep ? `<div class="time-value crossed-out">${formatTime(scheduledDep)}</div>` : ''}
+                                                ${actualDep ? `
+                                                    <div class="time-value">${formatTime(actualDep)}</div>
+                                                ` : scheduledDep ? `
+                                                    <div class="time-value">${formatTime(scheduledDep)}</div>
+                                                ` : ''}
+                                            </div>
+                                        </div>
+                                    ` : ''}
+                                    ${(scheduledArr || estimatedArr) ? `
+                                        <div class="time-block">
+                                            <div class="time-label">🛬 Arrival</div>
+                                            <div class="time-value-container">
+                                                ${scheduledArr && estimatedArr && scheduledArr !== estimatedArr ? `<div class="time-value crossed-out">${formatTime(scheduledArr)}</div>` : ''}
+                                                ${estimatedArr ? `
+                                                    <div class="time-value">${formatTime(estimatedArr)}</div>
+                                                ` : scheduledArr ? `
+                                                    <div class="time-value">${formatTime(scheduledArr)}</div>
+                                                ` : ''}
+                                            </div>
+                                        </div>
+                                    ` : ''}
                                     <div class="time-block">
                                         <div class="time-label">⬆️ Altitude</div>
                                         <div class="time-value">${altitude}</div>
