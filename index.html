@@ -337,7 +337,6 @@
             background: rgba(0, 0, 0, 0.2);
             padding: 12px;
             border-radius: 6px;
-            border-left: 4px solid rgba(255, 255, 255, 0.15);
             position: relative;
         }
 
@@ -437,7 +436,7 @@
         .time-value-container {
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: 6px;
             flex-wrap: wrap;
         }
 
@@ -812,6 +811,59 @@
             .upcoming-eta {
                 font-size: 1.1em;
             }
+
+            .app-header {
+                padding: 15px 20px;
+                height: auto;
+            }
+
+            .app-title {
+                font-size: 1.4em;
+            }
+        }
+
+        /* Very small screens - additional fixes */
+        @media (max-width: 360px) {
+            .app-header {
+                padding: 12px 15px;
+            }
+
+            .app-title {
+                font-size: 1.2em;
+            }
+
+            .flight-row {
+                padding: 14px;
+            }
+
+            .flight-header {
+                gap: 10px;
+            }
+
+            .flight-photo {
+                width: 70px;
+                height: 52px;
+            }
+
+            .flight-number {
+                font-size: 1.2em;
+            }
+
+            .flight-airline {
+                font-size: 0.75em;
+            }
+
+            .airport-flag {
+                font-size: 2em;
+            }
+
+            .airport-city {
+                font-size: 0.85em;
+            }
+
+            .airport-code {
+                font-size: 0.65em;
+            }
         }
 
         /* Landscape mode fixes for mobile/tablets */
@@ -850,7 +902,7 @@
 </head>
 <body>
     <header class="app-header">
-        <h1 class="app-title">skITQ - Plane Spotter</h1>
+        <h1 class="app-title">✈️ skITQ - Plane Spotter</h1>
     </header>
     <div class="main-section">
         <div class="dashboard-container">
