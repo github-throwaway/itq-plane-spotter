@@ -1623,6 +1623,9 @@
                 const altitude = flight.altitude ? `${Math.round(flight.altitude).toLocaleString()} ft` : 'N/A';
                 const speed = flight.ground_speed ? `${Math.round(flight.ground_speed)} kts` : 'N/A';
 
+                // Route separator emoji: landing for arrivals, taking off for departures
+                const routeEmoji = isArriving ? '🛬' : '🛫';
+
                 return `
                     <div class="flight-row ${flightStatus}" id="${rowId}">
                         <div class="flight-header">
@@ -1651,7 +1654,7 @@
                                         <div class="airport-city">${originCity}</div>
                                         ${originCountry ? `<div class="airport-country">${originCountry}</div>` : ''}
                                     </div>
-                                    <div class="route-separator"><span>✈️</span></div>
+                                    <div class="route-separator"><span>${routeEmoji}</span></div>
                                     <div class="airport-flag-container">
                                         <div class="airport-flag">${destFlag}</div>
                                         <div class="airport-code">${destCode}</div>
