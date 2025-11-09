@@ -237,12 +237,12 @@
 
         .flight-row {
             background: rgba(0, 0, 0, 0.2);
-            padding: 0;
+            padding: 18px;
             border-radius: 8px;
             transition: background 0.2s ease;
-            display: grid;
-            grid-template-columns: 150px 1fr;
-            grid-template-rows: auto auto;
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
             border-left: 3px solid transparent;
             position: relative;
         }
@@ -263,24 +263,20 @@
             display: flex;
             gap: 16px;
             align-items: flex-start;
-            padding: 18px 18px 0 18px;
-            grid-column: 2;
-            grid-row: 1;
         }
 
         .flight-photo {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            border-radius: 8px 0 0 8px;
+            width: 100px;
+            height: 75px;
+            object-fit: contain;
+            border-radius: 8px;
             background: rgba(0, 0, 0, 0.3);
             display: flex;
             align-items: center;
             justify-content: center;
             font-size: 2.5em;
-            border-right: 1px solid var(--gray-200-alpha);
-            grid-column: 1;
-            grid-row: 1 / -1;
+            border: 1px solid var(--gray-200-alpha);
+            flex-shrink: 0;
         }
 
         .flight-photo img {
@@ -347,10 +343,8 @@
             display: flex;
             flex-direction: column;
             gap: 6px;
-            padding: 12px 18px 18px 18px;
+            padding-top: 12px;
             border-top: 1px solid var(--gray-200-alpha);
-            grid-column: 2;
-            grid-row: 2;
         }
 
         .flight-airports {
@@ -857,20 +851,16 @@
             }
 
             .flight-row {
-                grid-template-columns: 120px 1fr;
+                padding: 16px;
             }
 
             .flight-header {
                 gap: 12px;
-                padding: 14px 14px 0 14px;
             }
 
             .flight-photo {
-                font-size: 2em;
-            }
-
-            .flight-details {
-                padding: 10px 14px 14px 14px;
+                width: 80px;
+                height: 60px;
             }
 
             .flight-number {
@@ -1007,20 +997,16 @@
             }
 
             .flight-row {
-                grid-template-columns: 100px 1fr;
+                padding: 14px;
             }
 
             .flight-header {
                 gap: 10px;
-                padding: 12px 12px 0 12px;
             }
 
             .flight-photo {
-                font-size: 1.8em;
-            }
-
-            .flight-details {
-                padding: 8px 12px 12px 12px;
+                width: 70px;
+                height: 52px;
             }
 
             .flight-number {
