@@ -242,7 +242,7 @@
             transition: background 0.2s ease;
             display: flex;
             flex-direction: column;
-            gap: 14px;
+            gap: 0;
             border-left: 3px solid transparent;
             position: relative;
         }
@@ -342,15 +342,15 @@
         .flight-details {
             display: flex;
             flex-direction: column;
-            gap: 6px;
-            padding-top: 12px;
+            gap: 0;
+            padding-top: 8px;
             border-top: 1px solid var(--gray-200-alpha);
         }
 
         .flight-airports {
             display: flex;
             flex-direction: column;
-            gap: 2px;
+            gap: 0;
             position: relative;
         }
 
@@ -360,7 +360,7 @@
             text-transform: uppercase;
             letter-spacing: 0.5px;
             font-weight: 600;
-            margin-bottom: 4px;
+            margin-bottom: 2px;
         }
 
         .airport-content {
@@ -375,8 +375,8 @@
 
         .airport-box {
             display: flex;
-            gap: 8px;
-            padding: 10px;
+            gap: 6px;
+            padding: 8px;
             flex: 1;
             min-width: 0;
             align-items: center;
@@ -388,7 +388,7 @@
         }
 
         .airport-box:last-child {
-            padding-left: 28px;
+            padding-left: 40px;
         }
 
         .route-separator {
@@ -402,11 +402,11 @@
             align-items: center;
             justify-content: center;
             z-index: 2;
-            background: rgba(0, 0, 0, 0.5);
+            background: rgba(255, 255, 255, 0.5);
             border-radius: 50%;
             width: 3em;
             height: 3em;
-            border: 2px solid rgba(255, 255, 255, 0.3);
+            border: 2px solid rgba(255, 255, 255, 0.6);
         }
 
         .route-separator span {
@@ -467,15 +467,15 @@
         .flight-times {
             display: flex;
             flex-direction: column;
-            gap: 12px;
+            gap: 0;
         }
 
         .time-block {
             display: flex;
             flex-direction: column;
-            gap: 6px;
+            gap: 4px;
             background: rgba(0, 0, 0, 0.15);
-            padding: 8px 10px;
+            padding: 6px 8px;
             border-radius: 4px;
         }
 
@@ -504,18 +504,18 @@
             opacity: 0.6;
             color: var(--white-semi);
         }
-        
+
         .merged-time-block {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 12px;
+            gap: 0;
             width: 100%;
         }
-        
+
         .time-value-container {
             display: flex;
             align-items: center;
-            gap: 6px;
+            gap: 4px;
             flex-wrap: wrap;
         }
 
@@ -738,8 +738,8 @@
             }
 
             .airport-box {
-                padding: 8px;
-                gap: 8px;
+                padding: 6px;
+                gap: 6px;
             }
 
             .airport-box:first-child {
@@ -747,7 +747,7 @@
             }
 
             .airport-box:last-child {
-                padding-left: 20px;
+                padding-left: 32px;
             }
 
             .route-separator {
@@ -764,7 +764,11 @@
         /* Fix layout issues between 800px and 1200px */
         @media (max-width: 1200px) and (min-width: 800px) {
             .airport-box {
-                gap: 10px;
+                gap: 6px;
+            }
+
+            .airport-box:last-child {
+                padding-left: 36px;
             }
 
             .airport-flag-container {
@@ -892,8 +896,8 @@
             }
 
             .airport-box {
-                padding: 6px;
-                gap: 6px;
+                padding: 5px;
+                gap: 5px;
             }
 
             .airport-box:first-child {
@@ -901,7 +905,7 @@
             }
 
             .airport-box:last-child {
-                padding-left: 16px;
+                padding-left: 26px;
             }
 
             .route-separator {
@@ -932,7 +936,7 @@
             }
 
             .merged-time-block {
-                gap: 8px;
+                gap: 0;
             }
 
             .time-label {
@@ -1038,8 +1042,8 @@
             }
 
             .airport-box {
-                padding: 5px;
-                gap: 5px;
+                padding: 4px;
+                gap: 4px;
             }
 
             .airport-box:first-child {
@@ -1047,7 +1051,7 @@
             }
 
             .airport-box:last-child {
-                padding-left: 12px;
+                padding-left: 20px;
             }
 
             .route-separator {
