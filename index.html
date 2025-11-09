@@ -382,23 +382,15 @@
             justify-content: center;
         }
 
-        .route-separator::before {
-            content: '';
-            position: absolute;
-            left: 0;
-            right: 0;
-            top: 50%;
-            height: 2px;
-            background: var(--white-semi);
-            opacity: 0.3;
-            z-index: 0;
-        }
-
         .route-separator span {
-            position: relative;
-            z-index: 1;
-            background: rgba(0, 0, 0, 0.2);
-            padding: 0 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 2.5em;
+            height: 2.5em;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+            border: 2px solid rgba(255, 255, 255, 0.2);
         }
 
         .airport-flag-container {
@@ -722,6 +714,46 @@
                 grid-column: 1;
                 grid-row: 3;
             }
+
+            .flight-airports {
+                flex-wrap: nowrap;
+            }
+
+            .route-separator {
+                font-size: 1.3em;
+                padding: 0px 8px;
+            }
+
+            .route-separator span {
+                width: 2.2em;
+                height: 2.2em;
+            }
+        }
+
+        /* Fix layout issues between 800px and 1200px */
+        @media (max-width: 1200px) and (min-width: 800px) {
+            .flight-airports {
+                display: flex;
+                flex-direction: row;
+                align-items: center;
+                justify-content: space-between;
+            }
+
+            .airport-flag-container {
+                flex-shrink: 0;
+            }
+
+            .airport-info {
+                flex-shrink: 1;
+                min-width: 0;
+            }
+
+            .airport-city,
+            .airport-country {
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+            }
         }
 
         @media (max-width: 768px) {
@@ -832,8 +864,13 @@
             }
 
             .route-separator {
-                font-size: 1.2em;
-                padding: 0px 8px;
+                font-size: 1.1em;
+                padding: 0px 6px;
+            }
+
+            .route-separator span {
+                width: 2em;
+                height: 2em;
             }
 
             .airport-content {
@@ -952,8 +989,13 @@
             }
 
             .route-separator {
-                font-size: 1em;
-                padding: 0px 6px;
+                font-size: 0.9em;
+                padding: 0px 4px;
+            }
+
+            .route-separator span {
+                width: 2em;
+                height: 2em;
             }
 
             .airport-content {
