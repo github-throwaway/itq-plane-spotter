@@ -242,7 +242,7 @@
             transition: background 0.2s ease;
             display: flex;
             flex-direction: column;
-            gap: 0;
+            gap: 6px;
             border-left: 3px solid transparent;
             position: relative;
         }
@@ -342,7 +342,7 @@
         .flight-details {
             display: flex;
             flex-direction: column;
-            gap: 0;
+            gap: 6px;
             padding-top: 8px;
             border-top: 1px solid var(--gray-200-alpha);
         }
@@ -1769,7 +1769,6 @@
                                     <div class="airport-box">
                                         <div class="airport-flag-container">
                                             <div class="airport-flag">${originFlag}</div>
-                                            <div class="airport-code">${originCode}</div>
                                         </div>
                                         <div class="airport-info">
                                             <div class="airport-city">${originCity}</div>
@@ -1780,7 +1779,6 @@
                                     <div class="airport-box">
                                         <div class="airport-flag-container">
                                             <div class="airport-flag">${destFlag}</div>
-                                            <div class="airport-code">${destCode}</div>
                                         </div>
                                         <div class="airport-info">
                                             <div class="airport-city">${destCity}</div>
@@ -2308,7 +2306,7 @@
                 if (titleElement) titleElement.textContent = 'Upcoming';
                 container.innerHTML = `
                     <div style="text-align: center; padding: 20px; color: var(--white-semi); font-size: 0.9em;">
-                        No upcoming flights
+                        No more flights for today
                     </div>
                 `;
                 return;
