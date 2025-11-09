@@ -337,7 +337,6 @@
             background: rgba(0, 0, 0, 0.2);
             padding: 12px;
             border-radius: 6px;
-            border-left: 4px solid rgba(255, 255, 255, 0.15);
             position: relative;
         }
 
@@ -351,22 +350,38 @@
 
         .airport-content {
             display: flex;
+            align-items: flex-start;
+            gap: 12px;
+        }
+
+        .airport-flag-container {
+            display: flex;
+            flex-direction: column;
             align-items: center;
-            gap: 16px;
+            gap: 4px;
+            flex-shrink: 0;
         }
 
         .airport-flag {
             font-size: 3em;
             line-height: 1;
-            flex-shrink: 0;
+        }
+
+        .airport-code {
+            font-size: 0.8em;
+            font-weight: 600;
+            color: var(--white-semi);
+            letter-spacing: 0.5px;
+            line-height: 1;
         }
 
         .airport-info {
             display: flex;
             flex-direction: column;
-            gap: 4px;
+            gap: 2px;
             min-width: 0;
             flex: 1;
+            padding-top: 8px;
         }
 
         .airport-city {
@@ -380,14 +395,6 @@
             font-size: 0.85em;
             color: var(--white-semi);
             font-weight: 500;
-        }
-
-        .airport-code {
-            font-size: 0.75em;
-            font-weight: 500;
-            color: var(--white-semi);
-            letter-spacing: 0.3px;
-            line-height: 1.3;
         }
 
         .flight-times {
@@ -437,7 +444,7 @@
         .time-value-container {
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: 6px;
             flex-wrap: wrap;
         }
 
@@ -745,6 +752,10 @@
                 font-size: 2.5em;
             }
 
+            .airport-code {
+                font-size: 0.7em;
+            }
+
             .airport-city {
                 font-size: 0.9em;
             }
@@ -753,8 +764,8 @@
                 font-size: 0.75em;
             }
 
-            .airport-code {
-                font-size: 0.7em;
+            .airport-info {
+                padding-top: 6px;
             }
 
             .flight-times,
@@ -812,6 +823,67 @@
             .upcoming-eta {
                 font-size: 1.1em;
             }
+
+            .app-header {
+                padding: 15px 20px;
+                height: auto;
+            }
+
+            .app-title {
+                font-size: 1.4em;
+            }
+        }
+
+        /* Very small screens - additional fixes */
+        @media (max-width: 360px) {
+            .app-header {
+                padding: 12px 15px;
+            }
+
+            .app-title {
+                font-size: 1.2em;
+            }
+
+            .flight-row {
+                padding: 14px;
+            }
+
+            .flight-header {
+                gap: 10px;
+            }
+
+            .flight-photo {
+                width: 70px;
+                height: 52px;
+            }
+
+            .flight-number {
+                font-size: 1.2em;
+            }
+
+            .flight-airline {
+                font-size: 0.75em;
+            }
+
+            .airport-flag {
+                font-size: 2em;
+            }
+
+            .airport-code {
+                font-size: 0.65em;
+            }
+
+            .airport-city {
+                font-size: 0.85em;
+            }
+
+            .airport-country {
+                font-size: 0.7em;
+            }
+
+            .airport-info {
+                padding-top: 4px;
+            }
         }
 
         /* Landscape mode fixes for mobile/tablets */
@@ -850,7 +922,7 @@
 </head>
 <body>
     <header class="app-header">
-        <h1 class="app-title">skITQ - Plane Spotter</h1>
+        <h1 class="app-title">✈️ skITQ - Plane Spotter</h1>
     </header>
     <div class="main-section">
         <div class="dashboard-container">
@@ -1447,16 +1519,22 @@
                                 <span class="origin-label">${isArriving ? 'From' : 'To'}</span>
                                 <div class="airport-content">
                                     ${isArriving ? `
-                                        <div class="airport-flag">${originFlag}</div>
-                                        <div class="airport-info">
-                                            <div class="airport-city">${originCity}${originCountry ? `, ${originCountry}` : ''}</div>
+                                        <div class="airport-flag-container">
+                                            <div class="airport-flag">${originFlag}</div>
                                             <div class="airport-code">${originCode}</div>
                                         </div>
-                                    ` : `
-                                        <div class="airport-flag">${destFlag}</div>
                                         <div class="airport-info">
-                                            <div class="airport-city">${destCity}${destCountry ? `, ${destCountry}` : ''}</div>
+                                            <div class="airport-city">${originCity}</div>
+                                            ${originCountry ? `<div class="airport-country">${originCountry}</div>` : ''}
+                                        </div>
+                                    ` : `
+                                        <div class="airport-flag-container">
+                                            <div class="airport-flag">${destFlag}</div>
                                             <div class="airport-code">${destCode}</div>
+                                        </div>
+                                        <div class="airport-info">
+                                            <div class="airport-city">${destCity}</div>
+                                            ${destCountry ? `<div class="airport-country">${destCountry}</div>` : ''}
                                         </div>
                                     `}
                                 </div>
