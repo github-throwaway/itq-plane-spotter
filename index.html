@@ -1461,7 +1461,7 @@
                                             <div class="time-block">
                                                 <div class="time-label">🛫 Departure</div>
                                                 <div class="time-value-container">
-                                                    ${scheduledDep && actualDep && scheduledDep !== actualDep ? `<div class="time-value crossed-out" style="font-size: 0.85em;">${formatTime(scheduledDep)}</div>` : ''}
+                                                    ${scheduledDep && actualDep && scheduledDep !== actualDep ? `<div class="time-value crossed-out">${formatTime(scheduledDep)}</div>` : ''}
                                                     ${actualDep ? `
                                                         <div class="time-value">${formatTime(actualDep)}</div>
                                                     ` : scheduledDep ? `
@@ -1474,7 +1474,7 @@
                                             <div class="time-block">
                                                 <div class="time-label">🛬 Arrival</div>
                                                 <div class="time-value-container">
-                                                    ${scheduledArr && estimatedArr && scheduledArr !== estimatedArr ? `<div class="time-value crossed-out" style="font-size: 0.85em;">${formatTime(scheduledArr)}</div>` : ''}
+                                                    ${scheduledArr && estimatedArr && scheduledArr !== estimatedArr ? `<div class="time-value crossed-out">${formatTime(scheduledArr)}</div>` : ''}
                                                     ${estimatedArr ? `
                                                         <div class="time-value">${formatTime(estimatedArr)}</div>
                                                     ` : scheduledArr ? `
