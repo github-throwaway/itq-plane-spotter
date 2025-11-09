@@ -375,24 +375,30 @@
             font-size: 1.5em;
             color: var(--white-semi);
             align-self: center;
-            padding-top: 4px;
+            padding: 4px 12px;
             position: relative;
             display: flex;
             align-items: center;
-            gap: 8px;
+            justify-content: center;
         }
 
-        .route-separator::before,
-        .route-separator::after {
+        .route-separator::before {
             content: '';
-            flex: 1;
+            position: absolute;
+            left: 0;
+            right: 0;
+            top: 50%;
             height: 2px;
-            background: linear-gradient(to right, var(--white-semi) 0%, transparent 100%);
-            border-radius: 1px;
+            background: var(--white-semi);
+            opacity: 0.3;
+            z-index: 0;
         }
 
-        .route-separator::after {
-            background: linear-gradient(to left, var(--white-semi) 0%, transparent 100%);
+        .route-separator span {
+            position: relative;
+            z-index: 1;
+            background: rgba(0, 0, 0, 0.2);
+            padding: 0 8px;
         }
 
         .airport-flag-container {
@@ -445,8 +451,8 @@
         }
 
         .flight-times {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            display: flex;
+            flex-direction: column;
             gap: 12px;
         }
 
@@ -487,8 +493,9 @@
         
         .merged-time-block {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            grid-template-columns: 1fr 1fr;
             gap: 12px;
+            width: 100%;
         }
         
         .time-value-container {
@@ -826,8 +833,7 @@
 
             .route-separator {
                 font-size: 1.2em;
-                padding-top: 0px;
-                gap: 4px;
+                padding: 0px 8px;
             }
 
             .airport-content {
@@ -839,14 +845,8 @@
                 width: 100%;
             }
 
-            .flight-times {
-                grid-template-columns: 1fr 1fr;
-                gap: 8px;
-            }
-
             .merged-time-block {
-                grid-template-columns: 1fr 1fr;
-                width: 100%;
+                gap: 8px;
             }
 
             .time-label {
@@ -953,8 +953,7 @@
 
             .route-separator {
                 font-size: 1em;
-                padding-top: 0px;
-                gap: 3px;
+                padding: 0px 6px;
             }
 
             .airport-content {
@@ -1617,7 +1616,7 @@
                                         <div class="airport-city">${originCity}</div>
                                         ${originCountry ? `<div class="airport-country">${originCountry}</div>` : ''}
                                     </div>
-                                    <div class="route-separator">✈️</div>
+                                    <div class="route-separator"><span>✈️</span></div>
                                     <div class="airport-flag-container">
                                         <div class="airport-flag">${destFlag}</div>
                                         <div class="airport-code">${destCode}</div>
