@@ -425,7 +425,7 @@
         
         .merged-time-block {
             display: grid;
-            grid-template-columns: 1fr 1fr;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
             gap: 12px;
         }
         
@@ -1456,40 +1456,33 @@
                             </div>
 
                             <div class="flight-times">
-                                ${(scheduledDep || actualDep || scheduledArr || estimatedArr) ? `
-                                    <div class="merged-time-block">
-                                        ${(scheduledDep || actualDep) ? `
-                                            <div class="time-block">
-                                                <div class="time-label">🛫 Departure</div>
-                                                <div class="time-value-container">
-                                                    ${scheduledDep && actualDep && scheduledDep !== actualDep ? `<div class="time-value crossed-out">${formatTime(scheduledDep)}</div>` : ''}
-                                                    ${actualDep ? `
-                                                        <div class="time-value">${formatTime(actualDep)}</div>
-                                                    ` : scheduledDep ? `
-                                                        <div class="time-value">${formatTime(scheduledDep)}</div>
-                                                    ` : ''}
-                                                </div>
-                                            </div>
-                                        ` : ''}
-                                        ${(scheduledArr || estimatedArr) ? `
-                                            <div class="time-block">
-                                                <div class="time-label">🛬 Arrival</div>
-                                                <div class="time-value-container">
-                                                    ${scheduledArr && estimatedArr && scheduledArr !== estimatedArr ? `<div class="time-value crossed-out">${formatTime(scheduledArr)}</div>` : ''}
-                                                    ${estimatedArr ? `
-                                                        <div class="time-value">${formatTime(estimatedArr)}</div>
-                                                    ` : scheduledArr ? `
-                                                        <div class="time-value">${formatTime(scheduledArr)}</div>
-                                                    ` : ''}
-                                                </div>
-                                            </div>
-                                        ` : ''}
-                                    </div>
-                                ` : ''}
-                            </div>
-
-                            <div class="flight-times">
                                 <div class="merged-time-block">
+                                    ${(scheduledDep || actualDep) ? `
+                                        <div class="time-block">
+                                            <div class="time-label">🛫 Departure</div>
+                                            <div class="time-value-container">
+                                                ${scheduledDep && actualDep && scheduledDep !== actualDep ? `<div class="time-value crossed-out">${formatTime(scheduledDep)}</div>` : ''}
+                                                ${actualDep ? `
+                                                    <div class="time-value">${formatTime(actualDep)}</div>
+                                                ` : scheduledDep ? `
+                                                    <div class="time-value">${formatTime(scheduledDep)}</div>
+                                                ` : ''}
+                                            </div>
+                                        </div>
+                                    ` : ''}
+                                    ${(scheduledArr || estimatedArr) ? `
+                                        <div class="time-block">
+                                            <div class="time-label">🛬 Arrival</div>
+                                            <div class="time-value-container">
+                                                ${scheduledArr && estimatedArr && scheduledArr !== estimatedArr ? `<div class="time-value crossed-out">${formatTime(scheduledArr)}</div>` : ''}
+                                                ${estimatedArr ? `
+                                                    <div class="time-value">${formatTime(estimatedArr)}</div>
+                                                ` : scheduledArr ? `
+                                                    <div class="time-value">${formatTime(scheduledArr)}</div>
+                                                ` : ''}
+                                            </div>
+                                        </div>
+                                    ` : ''}
                                     <div class="time-block">
                                         <div class="time-label">⬆️ Altitude</div>
                                         <div class="time-value">${altitude}</div>
