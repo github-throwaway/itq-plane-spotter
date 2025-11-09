@@ -1149,28 +1149,62 @@
         // Get country flag emoji
         function getCountryFlag(countryName) {
             const countryFlags = {
+                // Western Europe
                 'Germany': '🇩🇪', 'France': '🇫🇷', 'Spain': '🇪🇸', 'Italy': '🇮🇹',
                 'United Kingdom': '🇬🇧', 'Netherlands': '🇳🇱', 'Belgium': '🇧🇪',
                 'Switzerland': '🇨🇭', 'Austria': '🇦🇹', 'Portugal': '🇵🇹',
-                'Greece': '🇬🇷', 'Poland': '🇵🇱', 'Turkey': '🇹🇷', 'Türkiye': '🇹🇷',
-                'United States': '🇺🇸', 'Canada': '🇨🇦',
+                'Luxembourg': '🇱🇺', 'Ireland': '🇮🇪',
+                // Southern Europe
+                'Greece': '🇬🇷', 'Malta': '🇲🇹', 'Cyprus': '🇨🇾',
+                'Albania': '🇦🇱', 'Bosnia and Herzegovina': '🇧🇦',
+                'North Macedonia': '🇲🇰', 'Montenegro': '🇲🇪',
+                // Eastern Europe
+                'Poland': '🇵🇱', 'Czech Republic': '🇨🇿', 'Hungary': '🇭🇺',
+                'Romania': '🇷🇴', 'Bulgaria': '🇧🇬', 'Croatia': '🇭🇷',
+                'Serbia': '🇷🇸', 'Kosovo': '🇽🇰', 'Slovenia': '🇸🇮',
+                'Slovakia': '🇸🇰', 'Moldova': '🇲🇩', 'Belarus': '🇧🇾',
+                'Ukraine': '🇺🇦', 'Russia': '🇷🇺',
+                // Northern Europe
+                'Sweden': '🇸🇪', 'Norway': '🇳🇴', 'Denmark': '🇩🇰',
+                'Finland': '🇫🇮', 'Iceland': '🇮🇸',
+                'Lithuania': '🇱🇹', 'Latvia': '🇱🇻', 'Estonia': '🇪🇪',
+                // Turkey & Caucasus
+                'Turkey': '🇹🇷', 'Türkiye': '🇹🇷',
+                'Georgia': '🇬🇪', 'Armenia': '🇦🇲', 'Azerbaijan': '🇦🇿',
+                // Middle East
                 'United Arab Emirates': '🇦🇪', 'Qatar': '🇶🇦', 'Saudi Arabia': '🇸🇦',
-                'Egypt': '🇪🇬', 'Morocco': '🇲🇦', 'Tunisia': '🇹🇳', 'Algeria': '🇩🇿',
-                'Israel': '🇮🇱', 'Lebanon': '🇱🇧', 'Jordan': '🇯🇴', 'Iraq': '🇮🇶',
-                'Kuwait': '🇰🇼', 'Bahrain': '🇧🇭', 'Oman': '🇴🇲', 'Yemen': '🇾🇪',
-                'India': '🇮🇳', 'China': '🇨🇳', 'Japan': '🇯🇵', 'South Korea': '🇰🇷',
-                'Singapore': '🇸🇬', 'Thailand': '🇹🇭', 'Malaysia': '🇲🇾', 'Indonesia': '🇮🇩',
-                'Russia': '🇷🇺', 'Ukraine': '🇺🇦', 'Sweden': '🇸🇪', 'Norway': '🇳🇴',
-                'Denmark': '🇩🇰', 'Finland': '🇫🇮', 'Ireland': '🇮🇪',
-                'Czech Republic': '🇨🇿', 'Hungary': '🇭🇺', 'Romania': '🇷🇴',
-                'Bulgaria': '🇧🇬', 'Croatia': '🇭🇷', 'Serbia': '🇷🇸', 'Kosovo': '🇽🇰',
-                'Slovenia': '🇸🇮', 'Slovakia': '🇸🇰', 'Lithuania': '🇱🇹',
-                'Latvia': '🇱🇻', 'Estonia': '🇪🇪', 'Iceland': '🇮🇸',
-                'Luxembourg': '🇱🇺', 'Malta': '🇲🇹', 'Cyprus': '🇨🇾',
-                'Brazil': '🇧🇷', 'Argentina': '🇦🇷', 'Mexico': '🇲🇽',
-                'Chile': '🇨🇱', 'Colombia': '🇨🇴', 'Peru': '🇵🇪',
-                'Australia': '🇦🇺', 'New Zealand': '🇳🇿',
-                'South Africa': '🇿🇦', 'Kenya': '🇰🇪', 'Ethiopia': '🇪🇹', 'Nigeria': '🇳🇬'
+                'Israel': '🇮🇱', 'Lebanon': '🇱🇧', 'Jordan': '🇯🇴',
+                'Kuwait': '🇰🇼', 'Bahrain': '🇧🇭', 'Oman': '🇴🇲',
+                'Iraq': '🇮🇶', 'Yemen': '🇾🇪', 'Iran': '🇮🇷',
+                // North Africa
+                'Egypt': '🇪🇬', 'Morocco': '🇲🇦', 'Tunisia': '🇹🇳',
+                'Algeria': '🇩🇿', 'Libya': '🇱🇾',
+                // Sub-Saharan Africa
+                'South Africa': '🇿🇦', 'Kenya': '🇰🇪', 'Ethiopia': '🇪🇹',
+                'Nigeria': '🇳🇬', 'Ghana': '🇬🇭', 'Senegal': '🇸🇳',
+                'Cape Verde': '🇨🇻', 'Cabo Verde': '🇨🇻',
+                'Cameroon': '🇨🇲', 'Uganda': '🇺🇬', 'Tanzania': '🇹🇿',
+                'Rwanda': '🇷🇼', 'Zambia': '🇿🇲', 'Zimbabwe': '🇿🇼',
+                'Namibia': '🇳🇦', 'Angola': '🇦🇴',
+                // North America
+                'United States': '🇺🇸', 'Canada': '🇨🇦', 'Mexico': '🇲🇽',
+                // Central America & Caribbean
+                'Cuba': '🇨🇺', 'Dominican Republic': '🇩🇴', 'Jamaica': '🇯🇲',
+                'Costa Rica': '🇨🇷', 'Panama': '🇵🇦',
+                // South America
+                'Brazil': '🇧🇷', 'Argentina': '🇦🇷', 'Chile': '🇨🇱',
+                'Colombia': '🇨🇴', 'Peru': '🇵🇪', 'Venezuela': '🇻🇪',
+                'Ecuador': '🇪🇨', 'Uruguay': '🇺🇾', 'Bolivia': '🇧🇴',
+                // Asia
+                'China': '🇨🇳', 'Japan': '🇯🇵', 'South Korea': '🇰🇷',
+                'India': '🇮🇳', 'Pakistan': '🇵🇰', 'Bangladesh': '🇧🇩',
+                'Sri Lanka': '🇱🇰', 'Afghanistan': '🇦🇫',
+                'Singapore': '🇸🇬', 'Thailand': '🇹🇭', 'Malaysia': '🇲🇾',
+                'Indonesia': '🇮🇩', 'Vietnam': '🇻🇳', 'Philippines': '🇵🇭',
+                'Taiwan': '🇹🇼', 'Hong Kong': '🇭🇰', 'Macao': '🇲🇴',
+                'Kazakhstan': '🇰🇿', 'Uzbekistan': '🇺🇿',
+                // Oceania
+                'Australia': '🇦🇺', 'New Zealand': '🇳🇿'
             };
             return countryFlags[countryName] || '🌍';
         }
