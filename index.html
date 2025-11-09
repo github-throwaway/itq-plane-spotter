@@ -332,8 +332,8 @@
 
         .flight-airports {
             display: flex;
-            align-items: center;
-            gap: 16px;
+            flex-direction: column;
+            gap: 8px;
             background: rgba(0, 0, 0, 0.2);
             padding: 12px;
             border-radius: 6px;
@@ -347,7 +347,12 @@
             text-transform: uppercase;
             letter-spacing: 0.5px;
             font-weight: 600;
-            margin-right: 8px;
+        }
+
+        .airport-content {
+            display: flex;
+            align-items: center;
+            gap: 16px;
         }
 
         .airport-flag {
@@ -1440,49 +1445,58 @@
                         <div class="flight-details">
                             <div class="flight-airports">
                                 <span class="origin-label">${isArriving ? 'From' : 'To'}</span>
-                                ${isArriving ? `
-                                    <div class="airport-flag">${originFlag}</div>
-                                    <div class="airport-info">
-                                        <div class="airport-city">${originCity}${originCountry ? `, ${originCountry}` : ''}</div>
-                                        <div class="airport-code">${originCode}</div>
+                                <div class="airport-content">
+                                    ${isArriving ? `
+                                        <div class="airport-flag">${originFlag}</div>
+                                        <div class="airport-info">
+                                            <div class="airport-city">${originCity}${originCountry ? `, ${originCountry}` : ''}</div>
+                                            <div class="airport-code">${originCode}</div>
+                                        </div>
+                                    ` : `
+                                        <div class="airport-flag">${destFlag}</div>
+                                        <div class="airport-info">
+                                            <div class="airport-city">${destCity}${destCountry ? `, ${destCountry}` : ''}</div>
+                                            <div class="airport-code">${destCode}</div>
+                                        </div>
+                                    `}
+                                </div>
+                            </div>
+
+                            <div class="flight-times">
+                                ${(scheduledDep || actualDep || scheduledArr || estimatedArr) ? `
+                                    <div class="merged-time-block">
+                                        ${(scheduledDep || actualDep) ? `
+                                            <div class="time-block">
+                                                <div class="time-label">🛫 Departure</div>
+                                                <div class="time-value-container">
+                                                    ${scheduledDep && actualDep && scheduledDep !== actualDep ? `<div class="time-value crossed-out">${formatTime(scheduledDep)}</div>` : ''}
+                                                    ${actualDep ? `
+                                                        <div class="time-value">${formatTime(actualDep)}</div>
+                                                    ` : scheduledDep ? `
+                                                        <div class="time-value">${formatTime(scheduledDep)}</div>
+                                                    ` : ''}
+                                                </div>
+                                            </div>
+                                        ` : ''}
+                                        ${(scheduledArr || estimatedArr) ? `
+                                            <div class="time-block">
+                                                <div class="time-label">🛬 Arrival</div>
+                                                <div class="time-value-container">
+                                                    ${scheduledArr && estimatedArr && scheduledArr !== estimatedArr ? `<div class="time-value crossed-out">${formatTime(scheduledArr)}</div>` : ''}
+                                                    ${estimatedArr ? `
+                                                        <div class="time-value">${formatTime(estimatedArr)}</div>
+                                                    ` : scheduledArr ? `
+                                                        <div class="time-value">${formatTime(scheduledArr)}</div>
+                                                    ` : ''}
+                                                </div>
+                                            </div>
+                                        ` : ''}
                                     </div>
-                                ` : `
-                                    <div class="airport-flag">${destFlag}</div>
-                                    <div class="airport-info">
-                                        <div class="airport-city">${destCity}${destCountry ? `, ${destCountry}` : ''}</div>
-                                        <div class="airport-code">${destCode}</div>
-                                    </div>
-                                `}
+                                ` : ''}
                             </div>
 
                             <div class="flight-times">
                                 <div class="merged-time-block">
-                                    ${(scheduledDep || actualDep) ? `
-                                        <div class="time-block">
-                                            <div class="time-label">🛫 Departure</div>
-                                            <div class="time-value-container">
-                                                ${scheduledDep && actualDep && scheduledDep !== actualDep ? `<div class="time-value crossed-out">${formatTime(scheduledDep)}</div>` : ''}
-                                                ${actualDep ? `
-                                                    <div class="time-value">${formatTime(actualDep)}</div>
-                                                ` : scheduledDep ? `
-                                                    <div class="time-value">${formatTime(scheduledDep)}</div>
-                                                ` : ''}
-                                            </div>
-                                        </div>
-                                    ` : ''}
-                                    ${(scheduledArr || estimatedArr) ? `
-                                        <div class="time-block">
-                                            <div class="time-label">🛬 Arrival</div>
-                                            <div class="time-value-container">
-                                                ${scheduledArr && estimatedArr && scheduledArr !== estimatedArr ? `<div class="time-value crossed-out">${formatTime(scheduledArr)}</div>` : ''}
-                                                ${estimatedArr ? `
-                                                    <div class="time-value">${formatTime(estimatedArr)}</div>
-                                                ` : scheduledArr ? `
-                                                    <div class="time-value">${formatTime(scheduledArr)}</div>
-                                                ` : ''}
-                                            </div>
-                                        </div>
-                                    ` : ''}
                                     <div class="time-block">
                                         <div class="time-label">⬆️ Altitude</div>
                                         <div class="time-value">${altitude}</div>
