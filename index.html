@@ -316,6 +316,14 @@
             margin-top: 2px;
         }
 
+        .flight-registration {
+            border: 1px solid var(--white-semi);
+            border-radius: 12px;
+            padding: 2px 8px;
+            color: var(--white);
+            font-weight: 600;
+        }
+
         .flight-aircraft-type {
             color: var(--white);
             font-weight: 600;
@@ -352,6 +360,13 @@
             display: flex;
             align-items: flex-start;
             gap: 12px;
+        }
+
+        .route-separator {
+            font-size: 1.5em;
+            color: var(--white-semi);
+            align-self: center;
+            padding-top: 4px;
         }
 
         .airport-flag-container {
@@ -749,23 +764,32 @@
             }
 
             .airport-flag {
-                font-size: 2.5em;
+                font-size: 2em;
             }
 
             .airport-code {
-                font-size: 0.7em;
+                font-size: 0.65em;
             }
 
             .airport-city {
-                font-size: 0.9em;
+                font-size: 0.8em;
             }
 
             .airport-country {
-                font-size: 0.75em;
+                font-size: 0.7em;
             }
 
             .airport-info {
                 padding-top: 6px;
+            }
+
+            .route-separator {
+                font-size: 1.2em;
+                padding-top: 0px;
+            }
+
+            .airport-content {
+                gap: 8px;
             }
 
             .flight-times,
@@ -866,23 +890,32 @@
             }
 
             .airport-flag {
-                font-size: 2em;
+                font-size: 1.6em;
             }
 
             .airport-code {
-                font-size: 0.65em;
+                font-size: 0.6em;
             }
 
             .airport-city {
-                font-size: 0.85em;
+                font-size: 0.75em;
             }
 
             .airport-country {
-                font-size: 0.7em;
+                font-size: 0.65em;
             }
 
             .airport-info {
                 padding-top: 4px;
+            }
+
+            .route-separator {
+                font-size: 1em;
+                padding-top: 0px;
+            }
+
+            .airport-content {
+                gap: 6px;
             }
         }
 
@@ -1470,8 +1503,18 @@
 
                 // Get comprehensive flight details
                 const details = flight.details;
+                const aircraftModelText = details?.aircraft?.model?.text || '';
                 const aircraftType = details?.aircraft?.model?.code || flight.aircraft_code || '';
                 const registration = flight.registration || '';
+
+                // Try to extract manufacturer from model text (e.g., "Airbus A320" -> "Airbus")
+                let manufacturer = '';
+                if (aircraftModelText) {
+                    const parts = aircraftModelText.split(' ');
+                    if (parts.length > 1) {
+                        manufacturer = parts[0];
+                    }
+                }
 
                 // Origin info
                 const originCode = flight.origin_iata || '';
@@ -1507,8 +1550,8 @@
                                 <div class="flight-number">${flight.flight_number || flight.callsign || 'Unknown'}</div>
                                 ${aircraftType || registration ? `
                                     <div class="flight-aircraft">
-                                        ${registration ? `${registration}` : ''}
-                                        ${aircraftType ? `<span class="flight-aircraft-type">${aircraftType}</span>` : ''}
+                                        ${registration ? `<span class="flight-registration">${registration}</span>` : ''}
+                                        ${aircraftType ? `<span class="flight-aircraft-type">${manufacturer ? `${manufacturer} ` : ''}${aircraftType}</span>` : ''}
                                     </div>
                                 ` : ''}
                             </div>
@@ -1516,27 +1559,25 @@
 
                         <div class="flight-details">
                             <div class="flight-airports">
-                                <span class="origin-label">${isArriving ? 'From' : 'To'}</span>
+                                <span class="origin-label">Route</span>
                                 <div class="airport-content">
-                                    ${isArriving ? `
-                                        <div class="airport-flag-container">
-                                            <div class="airport-flag">${originFlag}</div>
-                                            <div class="airport-code">${originCode}</div>
-                                        </div>
-                                        <div class="airport-info">
-                                            <div class="airport-city">${originCity}</div>
-                                            ${originCountry ? `<div class="airport-country">${originCountry}</div>` : ''}
-                                        </div>
-                                    ` : `
-                                        <div class="airport-flag-container">
-                                            <div class="airport-flag">${destFlag}</div>
-                                            <div class="airport-code">${destCode}</div>
-                                        </div>
-                                        <div class="airport-info">
-                                            <div class="airport-city">${destCity}</div>
-                                            ${destCountry ? `<div class="airport-country">${destCountry}</div>` : ''}
-                                        </div>
-                                    `}
+                                    <div class="airport-flag-container">
+                                        <div class="airport-flag">${originFlag}</div>
+                                        <div class="airport-code">${originCode}</div>
+                                    </div>
+                                    <div class="airport-info">
+                                        <div class="airport-city">${originCity}</div>
+                                        ${originCountry ? `<div class="airport-country">${originCountry}</div>` : ''}
+                                    </div>
+                                    <div class="route-separator">✈️</div>
+                                    <div class="airport-flag-container">
+                                        <div class="airport-flag">${destFlag}</div>
+                                        <div class="airport-code">${destCode}</div>
+                                    </div>
+                                    <div class="airport-info">
+                                        <div class="airport-city">${destCity}</div>
+                                        ${destCountry ? `<div class="airport-country">${destCountry}</div>` : ''}
+                                    </div>
                                 </div>
                             </div>
 
