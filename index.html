@@ -352,6 +352,7 @@
             flex-direction: column;
             gap: 0;
             position: relative;
+            margin-bottom: 6px;
         }
 
         .origin-label {
@@ -384,13 +385,13 @@
         .airport-box:first-child {
             flex: 1;
             padding-right: 26px;
-            margin-right: 3px;
+            margin-right: 6px;
         }
 
         .airport-box:last-child {
             flex: 0 0 auto;
             padding-left: 26px;
-            margin-left: 3px;
+            margin-left: 6px;
         }
 
         .airport-box:last-child .airport-info {
@@ -520,6 +521,10 @@
 
         .merged-time-block .time-block:nth-child(2) {
             text-align: right;
+        }
+
+        .merged-time-block .time-block:nth-child(2) .time-value-container {
+            justify-content: flex-end;
         }
 
         .time-value-container {
