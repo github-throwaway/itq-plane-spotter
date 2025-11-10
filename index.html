@@ -366,47 +366,53 @@
         .airport-content {
             display: flex;
             align-items: center;
-            gap: 4px;
+            justify-content: space-between;
+            gap: 20px;
             background: rgba(0, 0, 0, 0.2);
             border-radius: 6px;
-            position: relative;
-            overflow: visible;
+            padding: 8px;
         }
 
         .airport-box {
             display: flex;
             gap: 6px;
-            padding: 8px;
-            flex: 1;
+            flex: 0 0 auto;
             min-width: 0;
             align-items: center;
         }
 
-        .airport-box:first-child {
-            padding-right: 26px;
+        .airport-box-origin {
+            justify-content: flex-start;
         }
 
-        .airport-box:last-child {
-            padding-left: 26px;
+        .airport-box-destination {
+            justify-content: flex-end;
+            text-align: right;
+        }
+
+        .airport-box-destination .airport-info {
+            order: -1;
+            align-items: flex-end;
+        }
+
+        .airport-box-destination .airport-city,
+        .airport-box-destination .airport-country {
+            text-align: right;
         }
 
         .route-separator {
-            position: absolute;
-            left: 50%;
-            top: 50%;
-            transform: translate(-50%, -50%);
             font-size: 1.2em;
             color: var(--navy-900);
             display: flex;
             align-items: center;
             justify-content: center;
-            z-index: 2;
             background: #ffffff;
             border-radius: 50%;
             width: 2.6em;
             height: 2.6em;
             border: 2px solid rgba(255, 255, 255, 0.8);
             box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+            margin-left: 8px;
         }
 
         .route-separator span {
@@ -1766,7 +1772,7 @@
                             <div class="flight-airports">
                                 <span class="origin-label">Route</span>
                                 <div class="airport-content">
-                                    <div class="airport-box">
+                                    <div class="airport-box airport-box-origin">
                                         <div class="airport-flag-container">
                                             <div class="airport-flag">${originFlag}</div>
                                         </div>
@@ -1775,15 +1781,15 @@
                                             ${originCountry ? `<div class="airport-country">${originCountry}</div>` : ''}
                                         </div>
                                     </div>
-                                    <div class="route-separator"><span>${routeEmoji}</span></div>
-                                    <div class="airport-box">
-                                        <div class="airport-flag-container">
-                                            <div class="airport-flag">${destFlag}</div>
-                                        </div>
+                                    <div class="airport-box airport-box-destination">
                                         <div class="airport-info">
                                             <div class="airport-city">${destCity}</div>
                                             ${destCountry ? `<div class="airport-country">${destCountry}</div>` : ''}
                                         </div>
+                                        <div class="airport-flag-container">
+                                            <div class="airport-flag">${destFlag}</div>
+                                        </div>
+                                        <div class="route-separator"><span>${routeEmoji}</span></div>
                                     </div>
                                 </div>
                             </div>
