@@ -391,6 +391,10 @@
             padding-left: 26px;
         }
 
+        .airport-box:last-child .airport-info {
+            text-align: right;
+        }
+
         .route-separator {
             position: absolute;
             left: 50%;
@@ -1777,12 +1781,12 @@
                                     </div>
                                     <div class="route-separator"><span>${routeEmoji}</span></div>
                                     <div class="airport-box">
-                                        <div class="airport-flag-container">
-                                            <div class="airport-flag">${destFlag}</div>
-                                        </div>
                                         <div class="airport-info">
                                             <div class="airport-city">${destCity}</div>
                                             ${destCountry ? `<div class="airport-country">${destCountry}</div>` : ''}
+                                        </div>
+                                        <div class="airport-flag-container">
+                                            <div class="airport-flag">${destFlag}</div>
                                         </div>
                                     </div>
                                 </div>
