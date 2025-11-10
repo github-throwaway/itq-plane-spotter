@@ -366,7 +366,7 @@
         .airport-content {
             display: flex;
             align-items: center;
-            gap: 4px;
+            gap: 20px;
             background: rgba(0, 0, 0, 0.2);
             border-radius: 6px;
             position: relative;
@@ -377,36 +377,32 @@
             display: flex;
             gap: 6px;
             padding: 8px;
-            flex: 1;
             min-width: 0;
             align-items: center;
         }
 
         .airport-box:first-child {
-            padding-right: 26px;
+            flex: 1;
         }
 
         .airport-box:last-child {
-            padding-left: 26px;
+            flex: 0 0 auto;
         }
 
         .route-separator {
-            position: absolute;
-            left: 50%;
-            top: 50%;
-            transform: translate(-50%, -50%);
+            position: relative;
             font-size: 1.2em;
             color: var(--navy-900);
             display: flex;
             align-items: center;
             justify-content: center;
-            z-index: 2;
             background: #ffffff;
             border-radius: 50%;
             width: 2.6em;
             height: 2.6em;
             border: 2px solid rgba(255, 255, 255, 0.8);
             box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+            flex-shrink: 0;
         }
 
         .route-separator span {
