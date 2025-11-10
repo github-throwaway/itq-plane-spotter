@@ -384,11 +384,17 @@
         .airport-box:first-child {
             flex: 1;
             padding-right: 26px;
+            margin-right: 3px;
         }
 
         .airport-box:last-child {
             flex: 0 0 auto;
             padding-left: 26px;
+            margin-left: 3px;
+        }
+
+        .airport-box:last-child .airport-info {
+            text-align: right;
         }
 
         .route-separator {
@@ -1777,12 +1783,12 @@
                                     </div>
                                     <div class="route-separator"><span>${routeEmoji}</span></div>
                                     <div class="airport-box">
-                                        <div class="airport-flag-container">
-                                            <div class="airport-flag">${destFlag}</div>
-                                        </div>
                                         <div class="airport-info">
                                             <div class="airport-city">${destCity}</div>
                                             ${destCountry ? `<div class="airport-country">${destCountry}</div>` : ''}
+                                        </div>
+                                        <div class="airport-flag-container">
+                                            <div class="airport-flag">${destFlag}</div>
                                         </div>
                                     </div>
                                 </div>
