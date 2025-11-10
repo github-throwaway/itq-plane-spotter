@@ -235,68 +235,53 @@
             line-height: 1.1;
         }
 
-        /* Table Styles */
-        .flights-table {
+        /* Vertical Table Container */
+        .flights-container-vertical {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        /* Individual Flight Table */
+        .flight-table {
             width: 100%;
-            border-collapse: separate;
-            border-spacing: 0 6px;
-        }
-
-        .flights-table thead th {
-            background: rgba(0, 0, 0, 0.3);
-            color: var(--white-semi);
-            font-size: 0.85em;
-            font-weight: 600;
-            text-align: left;
-            padding: 12px 14px;
-            border-bottom: 2px solid var(--gray-200-alpha);
-            position: sticky;
-            top: 0;
-            z-index: 10;
-        }
-
-        .flights-table thead th:first-child {
-            border-top-left-radius: 6px;
-            border-bottom-left-radius: 6px;
-        }
-
-        .flights-table thead th:last-child {
-            border-top-right-radius: 6px;
-            border-bottom-right-radius: 6px;
-        }
-
-        .flight-row {
             background: rgba(0, 0, 0, 0.2);
+            border-radius: 8px;
+            border-collapse: collapse;
+            overflow: hidden;
             transition: background 0.2s ease;
             border-left: 3px solid transparent;
         }
 
-        .flight-row td {
-            padding: 14px;
-            vertical-align: middle;
-        }
-
-        .flight-row td:first-child {
-            border-top-left-radius: 8px;
-            border-bottom-left-radius: 8px;
-            border-left: 3px solid transparent;
-        }
-
-        .flight-row td:last-child {
-            border-top-right-radius: 8px;
-            border-bottom-right-radius: 8px;
-        }
-
-        .flight-row.arriving td:first-child {
+        .flight-table.arriving {
             border-left-color: var(--arrival-green);
         }
 
-        .flight-row.departing td:first-child {
+        .flight-table.departing {
             border-left-color: var(--departure-amber);
         }
 
-        .flight-row:hover {
+        .flight-table:hover {
             background: rgba(0, 0, 0, 0.3);
+        }
+
+        .flight-table td {
+            padding: 12px 14px;
+            vertical-align: middle;
+        }
+
+        .label-cell {
+            font-size: 0.8em;
+            color: var(--white-semi);
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            width: 120px;
+            border-right: 1px solid var(--gray-200-alpha);
+        }
+
+        .value-cell {
+            color: var(--white);
         }
 
         .flight-header {
@@ -559,39 +544,49 @@
             flex-wrap: wrap;
         }
 
-        /* Table Cell Styles */
+        /* Photo Cell in Vertical Layout */
         .flight-photo-cell {
+            width: 110px;
+            padding: 14px !important;
+            border-right: 1px solid var(--gray-200-alpha);
+        }
+
+        .flight-photo {
             width: 90px;
-            padding: 10px !important;
+            height: 68px;
+            object-fit: contain;
+            border-radius: 6px;
+            background: rgba(0, 0, 0, 0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.2em;
+            border: 1px solid var(--gray-200-alpha);
         }
 
-        .flight-photo-cell .flight-photo {
-            width: 70px;
-            height: 52px;
-            font-size: 1.8em;
+        .flight-photo img {
+            object-fit: contain !important;
         }
 
+        /* Flight Info Cell */
         .flight-info-cell {
-            min-width: 120px;
+            padding: 14px !important;
         }
 
         .flight-info-cell .flight-airline {
-            font-size: 0.75em;
+            font-size: 0.8em;
             color: var(--white-semi);
-            margin-bottom: 2px;
+            margin-bottom: 4px;
         }
 
         .flight-info-cell .flight-number {
-            font-size: 1.1em;
+            font-size: 1.3em;
             font-weight: 700;
             color: var(--white);
         }
 
-        .aircraft-cell {
-            min-width: 110px;
-        }
-
-        .aircraft-cell .flight-registration {
+        /* Registration and Aircraft Type */
+        .flight-registration {
             border: 1px solid var(--white-semi);
             border-radius: 12px;
             padding: 2px 8px;
@@ -599,23 +594,20 @@
             font-weight: 600;
             font-size: 0.75em;
             display: inline-block;
-            margin-bottom: 4px;
+            margin-right: 6px;
         }
 
-        .aircraft-cell .flight-aircraft-type {
-            color: var(--white-semi);
-            font-size: 0.8em;
+        .flight-aircraft-type {
+            color: var(--white);
+            font-size: 0.9em;
             font-weight: 500;
         }
 
-        .route-cell {
-            min-width: 200px;
-        }
-
+        /* Route Display */
         .route-compact {
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: 10px;
             flex-wrap: wrap;
         }
 
@@ -626,25 +618,22 @@
         }
 
         .route-flag {
-            font-size: 1.5em;
+            font-size: 1.6em;
         }
 
         .route-city {
-            font-size: 0.9em;
+            font-size: 0.95em;
             color: var(--white);
             font-weight: 600;
         }
 
         .route-separator-inline {
-            font-size: 1em;
+            font-size: 1.1em;
             color: var(--white-semi);
             opacity: 0.6;
         }
 
-        .times-cell {
-            min-width: 80px;
-        }
-
+        /* Time Display */
         .time-compact {
             display: flex;
             align-items: center;
@@ -656,20 +645,16 @@
         }
 
         .time-value-inline {
-            font-size: 0.95em;
+            font-size: 1em;
             color: var(--white);
             font-weight: 600;
         }
 
-        .live-data-cell {
-            min-width: 100px;
-        }
-
+        /* Live Data */
         .live-data-value {
-            font-size: 0.85em;
-            color: var(--white-semi);
+            font-size: 0.9em;
+            color: var(--white);
             font-weight: 500;
-            line-height: 1.6;
         }
 
         .footer {
@@ -1011,36 +996,36 @@
                 max-width: 280px !important;
             }
 
-            .flight-row {
-                padding: 16px;
-            }
-
-            .flight-row td {
+            .flight-table td {
                 padding: 10px;
             }
 
-            .flights-table thead th {
-                padding: 10px;
+            .label-cell {
                 font-size: 0.75em;
+                width: 100px;
             }
 
             .flight-photo-cell {
-                width: 70px;
-                padding: 8px !important;
+                width: 90px;
+                padding: 10px !important;
             }
 
-            .flight-photo-cell .flight-photo {
-                width: 55px;
-                height: 40px;
-                font-size: 1.4em;
+            .flight-photo {
+                width: 70px;
+                height: 52px;
+                font-size: 1.8em;
             }
 
             .route-flag {
-                font-size: 1.2em;
+                font-size: 1.4em;
             }
 
             .route-city {
-                font-size: 0.8em;
+                font-size: 0.85em;
+            }
+
+            .flight-info-cell .flight-number {
+                font-size: 1.2em;
             }
 
             .flight-header {
@@ -1185,45 +1170,45 @@
                 font-size: 1.2em;
             }
 
-            .flight-row {
-                padding: 14px;
-            }
-
-            .flight-row td {
+            .flight-table td {
                 padding: 8px;
                 font-size: 0.9em;
             }
 
-            .flights-table thead th {
-                padding: 8px;
+            .label-cell {
                 font-size: 0.7em;
+                width: 85px;
             }
 
             .flight-photo-cell {
-                width: 60px;
-                padding: 6px !important;
+                width: 75px;
+                padding: 8px !important;
             }
 
-            .flight-photo-cell .flight-photo {
-                width: 48px;
-                height: 36px;
-                font-size: 1.2em;
+            .flight-photo {
+                width: 60px;
+                height: 45px;
+                font-size: 1.5em;
             }
 
             .route-flag {
-                font-size: 1em;
+                font-size: 1.2em;
             }
 
             .route-city {
-                font-size: 0.75em;
+                font-size: 0.8em;
+            }
+
+            .flight-info-cell .flight-number {
+                font-size: 1.1em;
             }
 
             .time-value-inline {
-                font-size: 0.85em;
+                font-size: 0.9em;
             }
 
             .live-data-value {
-                font-size: 0.75em;
+                font-size: 0.8em;
             }
 
             .flight-header {
@@ -1335,7 +1320,7 @@
 </head>
 <body>
     <header class="app-header">
-        <h1 class="app-title">✈️ skITQ - Plane Spotter</h1>
+        <h1 class="app-title">skITQ - Plane Spotter</h1>
     </header>
     <div class="main-section">
         <div class="dashboard-container">
@@ -1965,80 +1950,83 @@
                 const routeEmoji = isArriving ? '🛬' : '🛫';
 
                 return `
-                    <tr class="flight-row ${flightStatus}" id="${rowId}">
-                        <td class="flight-photo-cell">
-                            <div class="flight-photo" id="${photoId}">✈️</div>
-                        </td>
-                        <td class="flight-info-cell">
-                            ${flight.airline_name ? `<div class="flight-airline">${flight.airline_name}</div>` : ''}
-                            <div class="flight-number">${flight.flight_number || flight.callsign || 'Unknown'}</div>
-                        </td>
-                        <td class="aircraft-cell">
-                            ${registration ? `<div class="flight-registration">${registration}</div>` : ''}
-                            ${aircraftType ? `<div class="flight-aircraft-type">${manufacturer ? `${manufacturer} ` : ''}${aircraftType}</div>` : ''}
-                        </td>
-                        <td class="route-cell">
-                            <div class="route-compact">
-                                <span class="route-airport">
-                                    <span class="route-flag">${originFlag}</span>
-                                    <span class="route-city">${originCity}</span>
-                                </span>
-                                <span class="route-separator-inline">${routeEmoji}</span>
-                                <span class="route-airport">
-                                    <span class="route-flag">${destFlag}</span>
-                                    <span class="route-city">${destCity}</span>
-                                </span>
-                            </div>
-                        </td>
-                        <td class="times-cell">
-                            ${(scheduledDep || actualDep) ? `
-                                <div class="time-compact">
-                                    <span class="time-label-inline">🛫</span>
-                                    ${actualDep ? `
-                                        <span class="time-value-inline">${formatTime(actualDep)}</span>
-                                    ` : scheduledDep ? `
-                                        <span class="time-value-inline">${formatTime(scheduledDep)}</span>
-                                    ` : ''}
+                    <table class="flight-table ${flightStatus}" id="${rowId}">
+                        <tr>
+                            <td class="flight-photo-cell" rowspan="6">
+                                <div class="flight-photo" id="${photoId}">✈️</div>
+                            </td>
+                            <td class="flight-info-cell" colspan="2">
+                                ${flight.airline_name ? `<div class="flight-airline">${flight.airline_name}</div>` : ''}
+                                <div class="flight-number">${flight.flight_number || flight.callsign || 'Unknown'}</div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="label-cell">Aircraft</td>
+                            <td class="value-cell">
+                                ${registration ? `<div class="flight-registration">${registration}</div>` : ''}
+                                ${aircraftType ? `<div class="flight-aircraft-type">${manufacturer ? `${manufacturer} ` : ''}${aircraftType}</div>` : '—'}
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="label-cell">Route</td>
+                            <td class="value-cell">
+                                <div class="route-compact">
+                                    <span class="route-airport">
+                                        <span class="route-flag">${originFlag}</span>
+                                        <span class="route-city">${originCity}</span>
+                                    </span>
+                                    <span class="route-separator-inline">${routeEmoji}</span>
+                                    <span class="route-airport">
+                                        <span class="route-flag">${destFlag}</span>
+                                        <span class="route-city">${destCity}</span>
+                                    </span>
                                 </div>
-                            ` : '<div class="time-compact">—</div>'}
-                        </td>
-                        <td class="times-cell">
-                            ${(scheduledArr || estimatedArr) ? `
-                                <div class="time-compact">
-                                    <span class="time-label-inline">🛬</span>
-                                    ${estimatedArr ? `
-                                        <span class="time-value-inline">${formatTime(estimatedArr)}</span>
-                                    ` : scheduledArr ? `
-                                        <span class="time-value-inline">${formatTime(scheduledArr)}</span>
-                                    ` : ''}
-                                </div>
-                            ` : '<div class="time-compact">—</div>'}
-                        </td>
-                        <td class="live-data-cell">
-                            <div class="live-data-value">${altitude}</div>
-                            <div class="live-data-value">${speed}</div>
-                        </td>
-                    </tr>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="label-cell">Departure</td>
+                            <td class="value-cell">
+                                ${(scheduledDep || actualDep) ? `
+                                    <div class="time-compact">
+                                        <span class="time-label-inline">🛫</span>
+                                        ${actualDep ? `
+                                            <span class="time-value-inline">${formatTime(actualDep)}</span>
+                                        ` : scheduledDep ? `
+                                            <span class="time-value-inline">${formatTime(scheduledDep)}</span>
+                                        ` : ''}
+                                    </div>
+                                ` : '—'}
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="label-cell">Arrival</td>
+                            <td class="value-cell">
+                                ${(scheduledArr || estimatedArr) ? `
+                                    <div class="time-compact">
+                                        <span class="time-label-inline">🛬</span>
+                                        ${estimatedArr ? `
+                                            <span class="time-value-inline">${formatTime(estimatedArr)}</span>
+                                        ` : scheduledArr ? `
+                                            <span class="time-value-inline">${formatTime(scheduledArr)}</span>
+                                        ` : ''}
+                                    </div>
+                                ` : '—'}
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="label-cell">Alt / Speed</td>
+                            <td class="value-cell">
+                                <div class="live-data-value">${altitude} / ${speed}</div>
+                            </td>
+                        </tr>
+                    </table>
                 `;
             }).join('');
 
             const flightsHtml = `
-                <table class="flights-table">
-                    <thead>
-                        <tr>
-                            <th class="photo-header"></th>
-                            <th class="flight-header">Flight</th>
-                            <th class="aircraft-header">Aircraft</th>
-                            <th class="route-header">Route</th>
-                            <th class="time-header">Departure</th>
-                            <th class="time-header">Arrival</th>
-                            <th class="live-header">Alt / Speed</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        ${tableRows}
-                    </tbody>
-                </table>
+                <div class="flights-container-vertical">
+                    ${tableRows}
+                </div>
             `;
 
             container.innerHTML = flightsHtml;
