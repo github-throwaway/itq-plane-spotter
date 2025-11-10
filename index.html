@@ -607,14 +607,24 @@
         .route-compact {
             display: flex;
             align-items: center;
-            gap: 10px;
-            flex-wrap: wrap;
+            justify-content: space-between;
+            gap: 20px;
         }
 
         .route-airport {
             display: flex;
             align-items: center;
             gap: 6px;
+        }
+
+        .route-origin {
+            flex: 0 0 auto;
+        }
+
+        .route-destination {
+            flex: 0 0 auto;
+            text-align: right;
+            flex-direction: row-reverse;
         }
 
         .route-flag {
@@ -631,6 +641,7 @@
             font-size: 1.1em;
             color: var(--white-semi);
             opacity: 0.6;
+            margin-left: 8px;
         }
 
         /* Time Display */
@@ -1971,14 +1982,14 @@
                             <td class="label-cell">Route</td>
                             <td class="value-cell">
                                 <div class="route-compact">
-                                    <span class="route-airport">
+                                    <span class="route-airport route-origin">
                                         <span class="route-flag">${originFlag}</span>
                                         <span class="route-city">${originCity}</span>
                                     </span>
-                                    <span class="route-separator-inline">${routeEmoji}</span>
-                                    <span class="route-airport">
+                                    <span class="route-airport route-destination">
                                         <span class="route-flag">${destFlag}</span>
                                         <span class="route-city">${destCity}</span>
+                                        <span class="route-separator-inline">${routeEmoji}</span>
                                     </span>
                                 </div>
                             </td>
