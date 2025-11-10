@@ -235,22 +235,22 @@
             line-height: 1.1;
         }
 
-        /* Vertical Table Container */
+        /* Flights Container */
         .flights-container-vertical {
             display: flex;
             flex-direction: column;
             gap: 12px;
         }
 
-        /* Individual Flight Table */
+        /* Individual Flight Table (Card) */
         .flight-table {
             width: 100%;
             background: rgba(0, 0, 0, 0.2);
             border-radius: 8px;
             border-collapse: collapse;
-            overflow: hidden;
             transition: background 0.2s ease;
             border-left: 3px solid transparent;
+            padding: 18px;
         }
 
         .flight-table.arriving {
@@ -266,22 +266,7 @@
         }
 
         .flight-table td {
-            padding: 12px 14px;
-            vertical-align: middle;
-        }
-
-        .label-cell {
-            font-size: 0.8em;
-            color: var(--white-semi);
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            width: 120px;
-            border-right: 1px solid var(--gray-200-alpha);
-        }
-
-        .value-cell {
-            color: var(--white);
+            vertical-align: top;
         }
 
         .flight-header {
@@ -544,48 +529,58 @@
             flex-wrap: wrap;
         }
 
-        /* Photo Cell in Vertical Layout */
+        /* Photo Cell */
         .flight-photo-cell {
-            width: 110px;
-            padding: 14px !important;
-            border-right: 1px solid var(--gray-200-alpha);
+            width: 100px;
+            padding: 0 16px 0 0 !important;
         }
 
         .flight-photo {
-            width: 90px;
-            height: 68px;
+            width: 100px;
+            height: 75px;
             object-fit: contain;
-            border-radius: 6px;
+            border-radius: 8px;
             background: rgba(0, 0, 0, 0.3);
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 2.2em;
+            font-size: 2.5em;
             border: 1px solid var(--gray-200-alpha);
+            flex-shrink: 0;
         }
 
         .flight-photo img {
             object-fit: contain !important;
         }
 
-        /* Flight Info Cell */
+        /* Flight Info Cell (Header) */
         .flight-info-cell {
-            padding: 14px !important;
+            padding: 0 !important;
+            padding-bottom: 6px !important;
         }
 
-        .flight-info-cell .flight-airline {
-            font-size: 0.8em;
+        .flight-airline {
+            font-size: 0.85em;
             color: var(--white-semi);
-            margin-bottom: 4px;
+            font-weight: 500;
+            margin-bottom: 2px;
         }
 
-        .flight-info-cell .flight-number {
-            font-size: 1.3em;
+        .flight-number {
+            font-size: 1.5em;
             font-weight: 700;
             color: var(--white);
+            letter-spacing: -0.5px;
         }
 
-        /* Registration and Aircraft Type */
+        .flight-aircraft {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            flex-shrink: 0;
+            margin-top: 2px;
+        }
+
         .flight-registration {
             border: 1px solid var(--white-semi);
             border-radius: 12px;
@@ -593,68 +588,176 @@
             color: var(--white);
             font-weight: 600;
             font-size: 0.75em;
-            display: inline-block;
-            margin-right: 6px;
         }
 
         .flight-aircraft-type {
             color: var(--white);
-            font-size: 0.9em;
-            font-weight: 500;
+            font-weight: 600;
+            font-size: 0.75em;
+            margin-left: 4px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
         }
 
-        /* Route Display */
-        .route-compact {
+        /* Route Section Cell */
+        .route-section-cell {
+            padding: 0 !important;
+            padding-top: 8px !important;
+            border-top: 1px solid var(--gray-200-alpha);
+        }
+
+        .origin-label {
+            font-size: 0.7em;
+            color: var(--white-semi);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-weight: 600;
+            margin-bottom: 2px;
+            display: block;
+        }
+
+        .airport-content {
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 4px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 6px;
+            position: relative;
+        }
+
+        .airport-box {
+            display: flex;
+            gap: 6px;
+            flex: 1;
+            min-width: 0;
+            align-items: center;
+            padding: 8px;
+        }
+
+        .airport-box:first-child {
+            padding-right: 26px;
+        }
+
+        .airport-box:last-child {
+            padding-left: 26px;
+        }
+
+        .route-separator {
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 1.2em;
+            color: var(--navy-900);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 2;
+            background: #ffffff;
+            border-radius: 50%;
+            width: 2.6em;
+            height: 2.6em;
+            border: 2px solid rgba(255, 255, 255, 0.8);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+        }
+
+        .route-separator span {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .airport-flag-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+            flex-shrink: 0;
+        }
+
+        .airport-flag {
+            font-size: 3em;
+            line-height: 1;
+        }
+
+        .airport-info {
+            display: flex;
+            flex-direction: column;
+            gap: 3px;
+            min-width: 0;
+            flex: 1;
+        }
+
+        .airport-city {
+            font-size: 0.9em;
+            color: var(--white);
+            font-weight: 500;
+            line-height: 1.2;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .airport-country {
+            font-size: 0.75em;
+            color: var(--white-semi);
+            font-weight: 400;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            opacity: 0.7;
+        }
+
+        /* Time Cells */
+        .time-cell {
+            padding: 6px 0 !important;
+        }
+
+        .time-block {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            background: rgba(0, 0, 0, 0.15);
+            padding: 6px 8px;
+            border-radius: 4px;
+        }
+
+        .time-label {
+            font-size: 0.7em;
+            color: var(--white-semi);
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+            font-weight: 600;
+            line-height: 1.2;
+            white-space: nowrap;
+        }
+
+        .time-value {
+            font-size: 1em;
+            color: var(--white);
+            font-weight: 700;
+            line-height: 1;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .time-value-container {
+            display: flex;
+            align-items: center;
+            gap: 4px;
             flex-wrap: wrap;
         }
 
-        .route-airport {
-            display: flex;
-            align-items: center;
-            gap: 6px;
+        .crossed-out {
+            text-decoration: line-through;
+            opacity: 0.5;
         }
 
-        .route-flag {
-            font-size: 1.6em;
-        }
-
-        .route-city {
-            font-size: 0.95em;
-            color: var(--white);
-            font-weight: 600;
-        }
-
-        .route-separator-inline {
-            font-size: 1.1em;
-            color: var(--white-semi);
-            opacity: 0.6;
-        }
-
-        /* Time Display */
-        .time-compact {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-        }
-
-        .time-label-inline {
-            font-size: 1em;
-        }
-
-        .time-value-inline {
-            font-size: 1em;
-            color: var(--white);
-            font-weight: 600;
-        }
-
-        /* Live Data */
-        .live-data-value {
-            font-size: 0.9em;
-            color: var(--white);
-            font-weight: 500;
+        /* Live Data Cells */
+        .live-data-cell {
+            padding: 0 !important;
         }
 
         .footer {
@@ -1952,71 +2055,90 @@
                 return `
                     <table class="flight-table ${flightStatus}" id="${rowId}">
                         <tr>
-                            <td class="flight-photo-cell" rowspan="6">
+                            <td class="flight-photo-cell" rowspan="4">
                                 <div class="flight-photo" id="${photoId}">✈️</div>
                             </td>
                             <td class="flight-info-cell" colspan="2">
                                 ${flight.airline_name ? `<div class="flight-airline">${flight.airline_name}</div>` : ''}
                                 <div class="flight-number">${flight.flight_number || flight.callsign || 'Unknown'}</div>
+                                ${(registration || aircraftType) ? `
+                                    <div class="flight-aircraft">
+                                        ${registration ? `<span class="flight-registration">${registration}</span>` : ''}
+                                        ${aircraftType ? `<span class="flight-aircraft-type">${manufacturer ? `${manufacturer} ` : ''}${aircraftType}</span>` : ''}
+                                    </div>
+                                ` : ''}
                             </td>
                         </tr>
                         <tr>
-                            <td class="label-cell">Aircraft</td>
-                            <td class="value-cell">
-                                ${registration ? `<div class="flight-registration">${registration}</div>` : ''}
-                                ${aircraftType ? `<div class="flight-aircraft-type">${manufacturer ? `${manufacturer} ` : ''}${aircraftType}</div>` : '—'}
-                            </td>
-                        </tr>
-                        <tr>
-                            <td class="label-cell">Route</td>
-                            <td class="value-cell">
-                                <div class="route-compact">
-                                    <span class="route-airport">
-                                        <span class="route-flag">${originFlag}</span>
-                                        <span class="route-city">${originCity}</span>
-                                    </span>
-                                    <span class="route-separator-inline">${routeEmoji}</span>
-                                    <span class="route-airport">
-                                        <span class="route-flag">${destFlag}</span>
-                                        <span class="route-city">${destCity}</span>
-                                    </span>
+                            <td class="route-section-cell" colspan="2">
+                                <span class="origin-label">Route</span>
+                                <div class="airport-content">
+                                    <div class="airport-box">
+                                        <div class="airport-flag-container">
+                                            <div class="airport-flag">${originFlag}</div>
+                                        </div>
+                                        <div class="airport-info">
+                                            <div class="airport-city">${originCity}</div>
+                                            ${originCountry ? `<div class="airport-country">${originCountry}</div>` : ''}
+                                        </div>
+                                    </div>
+                                    <div class="route-separator"><span>${routeEmoji}</span></div>
+                                    <div class="airport-box">
+                                        <div class="airport-flag-container">
+                                            <div class="airport-flag">${destFlag}</div>
+                                        </div>
+                                        <div class="airport-info">
+                                            <div class="airport-city">${destCity}</div>
+                                            ${destCountry ? `<div class="airport-country">${destCountry}</div>` : ''}
+                                        </div>
+                                    </div>
                                 </div>
                             </td>
                         </tr>
                         <tr>
-                            <td class="label-cell">Departure</td>
-                            <td class="value-cell">
+                            <td class="time-cell">
                                 ${(scheduledDep || actualDep) ? `
-                                    <div class="time-compact">
-                                        <span class="time-label-inline">🛫</span>
-                                        ${actualDep ? `
-                                            <span class="time-value-inline">${formatTime(actualDep)}</span>
-                                        ` : scheduledDep ? `
-                                            <span class="time-value-inline">${formatTime(scheduledDep)}</span>
-                                        ` : ''}
+                                    <div class="time-block">
+                                        <div class="time-label">🛫 Departure</div>
+                                        <div class="time-value-container">
+                                            ${scheduledDep && actualDep && scheduledDep !== actualDep ? `<div class="time-value crossed-out">${formatTime(scheduledDep)}</div>` : ''}
+                                            ${actualDep ? `
+                                                <div class="time-value">${formatTime(actualDep)}</div>
+                                            ` : scheduledDep ? `
+                                                <div class="time-value">${formatTime(scheduledDep)}</div>
+                                            ` : ''}
+                                        </div>
                                     </div>
-                                ` : '—'}
+                                ` : ''}
                             </td>
-                        </tr>
-                        <tr>
-                            <td class="label-cell">Arrival</td>
-                            <td class="value-cell">
+                            <td class="time-cell">
                                 ${(scheduledArr || estimatedArr) ? `
-                                    <div class="time-compact">
-                                        <span class="time-label-inline">🛬</span>
-                                        ${estimatedArr ? `
-                                            <span class="time-value-inline">${formatTime(estimatedArr)}</span>
-                                        ` : scheduledArr ? `
-                                            <span class="time-value-inline">${formatTime(scheduledArr)}</span>
-                                        ` : ''}
+                                    <div class="time-block">
+                                        <div class="time-label">🛬 Arrival</div>
+                                        <div class="time-value-container">
+                                            ${scheduledArr && estimatedArr && scheduledArr !== estimatedArr ? `<div class="time-value crossed-out">${formatTime(scheduledArr)}</div>` : ''}
+                                            ${estimatedArr ? `
+                                                <div class="time-value">${formatTime(estimatedArr)}</div>
+                                            ` : scheduledArr ? `
+                                                <div class="time-value">${formatTime(scheduledArr)}</div>
+                                            ` : ''}
+                                        </div>
                                     </div>
-                                ` : '—'}
+                                ` : ''}
                             </td>
                         </tr>
                         <tr>
-                            <td class="label-cell">Alt / Speed</td>
-                            <td class="value-cell">
-                                <div class="live-data-value">${altitude} / ${speed}</div>
+                            <td class="live-data-cell">
+                                <div class="time-block">
+                                    <div class="time-label">⬆️ Altitude</div>
+                                    <div class="time-value">${altitude}</div>
+                                </div>
+                            </td>
+                            <td class="live-data-cell">
+                                <div class="time-block">
+                                    <div class="time-label">🚀 Speed</div>
+                                    <div class="time-value">${speed}</div>
+                                </div>
                             </td>
                         </tr>
                     </table>
