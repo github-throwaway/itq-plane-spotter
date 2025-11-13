@@ -2,6 +2,8 @@
 
 Real-time aviation intelligence dashboard for Düsseldorf Airport (EDDL/DUS). Track visible planes, upcoming flights, weather conditions, and active runways.
 
+**Live Demo:** https://github-throwaway.github.io/itq-plane-spotter/
+
 ## Features
 
 - **Live Flight Tracking**: Real-time visualization of aircraft in the viewing area using FlightRadar24 data
@@ -81,16 +83,20 @@ The frontend automatically uses the local backend API when available.
 
 ### Option 2: Without Backend (Fallback Mode)
 
-To run without the backend server:
+The app runs in fallback mode by default (`USE_LOCAL_API = false` in `index.html`):
 
-1. Edit `index.html` and change:
-```javascript
-const USE_LOCAL_API = false;
+1. Simply open `index.html` directly in your browser or serve it:
+```bash
+# Python 3
+python3 -m http.server 8000
+
+# Node.js http-server
+npx http-server -p 8000
 ```
 
-2. Open `index.html` directly in your browser
+2. Navigate to `http://localhost:8000`
 
-In fallback mode, the app uses direct API calls through a CORS proxy (may be slower or less reliable).
+In fallback mode, the app uses direct FlightRadar24 API calls through a CORS proxy (may be slower or less reliable).
 
 ## API Endpoints
 
@@ -165,12 +171,6 @@ Get airport information by IATA code.
 curl "http://localhost:3000/api/airport/DUS"
 ```
 
-### Get Airlines
-```
-GET /api/airlines
-```
-Get list of all airlines.
-
 ## Configuration
 
 ### View Bounds
@@ -193,17 +193,19 @@ const SEARCH_BOUNDS = {
 ```
 
 ### Refresh Interval
-Change update frequency (default: 60 seconds):
+The app uses dynamic refresh intervals based on flight activity:
 
 ```javascript
-const REFRESH_INTERVAL = 60000; // milliseconds
+const REFRESH_INTERVAL_FAST = 15000;    // 15 seconds when planes are nearby
+const REFRESH_INTERVAL_NORMAL = 30000;  // 30 seconds when moderate activity
+const REFRESH_INTERVAL_SLOW = 60000;    // 60 seconds when no activity
 ```
 
 ### API Mode
-Toggle between local backend and fallback mode:
+Toggle between local backend and fallback mode (default is `false`):
 
 ```javascript
-const USE_LOCAL_API = true; // false for direct API calls
+const USE_LOCAL_API = false; // Set to true when running backend locally
 ```
 
 ## Development
@@ -235,8 +237,7 @@ itq-plane-spotter/
 - FlightRadarAPI library
 
 **Data Sources:**
-- [FlightRadar24](https://www.flightradar24.com/) - Flight tracking (via FlightRadarAPI)
-- [DUS Airport API](https://www.dus.com/) - Scheduled flights
+- [FlightRadar24](https://www.flightradar24.com/) - Flight tracking and scheduled flights (via FlightRadarAPI)
 - [Planespotters.net](https://www.planespotters.net/) - Aircraft photos
 - [ATIS Guru](https://atis.guru/) - Runway information
 - [METAR-TAF.com](https://metar-taf.com/) - Weather data
@@ -268,10 +269,10 @@ The FlightRadar24 map center matches the VIEW_BOUNDS area monitored by the API.
 - Reinstall dependencies: `npm install`
 
 ### No flights showing
-- Check backend health: `http://localhost:3000/api/health`
 - Check browser console for errors
-- Try fallback mode: Set `USE_LOCAL_API = false`
 - Verify internet connectivity
+- If using backend: Check backend health at `http://localhost:3000/api/health`
+- If backend is down: App will automatically use fallback mode
 
 ### API rate limiting
 The FlightRadarAPI handles rate limiting automatically. For production:
@@ -282,10 +283,9 @@ The FlightRadarAPI handles rate limiting automatically. For production:
 ## Deployment
 
 ### GitHub Pages (Frontend Only)
-The frontend can run standalone using fallback mode:
-1. Set `USE_LOCAL_API = false` in `index.html`
-2. Push to GitHub Pages
-3. Access at `https://username.github.io/itq-plane-spotter`
+The frontend runs standalone in fallback mode by default:
+1. Push to GitHub Pages
+2. Access at `https://username.github.io/itq-plane-spotter`
 
 ### Full Deployment (with Backend)
 Deploy backend to platforms like:
@@ -294,8 +294,9 @@ Deploy backend to platforms like:
 - Render
 - DigitalOcean App Platform
 
-Update `LOCAL_API_BASE` in `index.html` to your backend URL:
+Update `index.html` configuration:
 ```javascript
+const USE_LOCAL_API = true;
 const LOCAL_API_BASE = 'https://your-backend.herokuapp.com/api';
 ```
 
@@ -310,4 +311,3 @@ This project is for educational purposes only. The FlightRadarAPI library is uno
 - [Planespotters.net](https://www.planespotters.net/)
 - [ATIS Guru](https://atis.guru/)
 - [METAR-TAF.com](https://metar-taf.com/)
-- [Düsseldorf Airport](https://www.dus.com/)
