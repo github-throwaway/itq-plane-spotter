@@ -17,58 +17,19 @@ Real-time aviation intelligence dashboard for Düsseldorf Airport (EDDL/DUS). Tr
   - Departure and arrival times
   - Aircraft photos from Planespotters.net
   - Approach status with intelligent time display
-- **Dual API Architecture**: Uses FlightRadarAPI backend with fallback to direct API calls
+- **Dynamic Refresh**: Automatically adjusts update frequency based on flight activity
 
 ## Architecture
 
-The application consists of two components:
-
-### Frontend (`index.html`)
-Single-page web application with:
+Single-page web application built with:
 - Pure HTML5, CSS3, and vanilla JavaScript
-- No build process required
-- Automatic fallback when backend is unavailable
-- 3-column responsive layout
+- No build process or dependencies required
+- Direct API integration with FlightRadar24 via CORS proxy
 
-### Backend (`server.js`)
-Node.js API server using the [FlightRadarAPI](https://github.com/JeanExtreme002/FlightRadarAPI) library:
-- RESTful API endpoints
-- Cleaner abstraction over FlightRadar24 data
-- Better error handling
-- CORS enabled for frontend access
+## Running Locally
 
-**Important Note**: FlightRadarAPI is an unofficial SDK for educational purposes only. For commercial use, contact Flightradar24 directly at business@fr24.com.
+Simply open `index.html` in your browser or serve it with a local web server:
 
-## Installation
-
-### Prerequisites
-- Node.js (v14 or higher)
-- npm or yarn
-
-### Setup
-
-1. Clone the repository:
-```bash
-git clone <repository-url>
-cd itq-plane-spotter
-```
-
-2. Install dependencies:
-```bash
-npm install
-```
-
-## Running the Application
-
-### Option 1: With Local Backend (Recommended)
-
-1. Start the backend server:
-```bash
-npm start
-```
-The API server will start on `http://localhost:3000`
-
-2. Open `index.html` in your browser or serve it:
 ```bash
 # Python 3
 python3 -m http.server 8000
@@ -77,99 +38,7 @@ python3 -m http.server 8000
 npx http-server -p 8000
 ```
 
-3. Navigate to `http://localhost:8000`
-
-The frontend automatically uses the local backend API when available.
-
-### Option 2: Without Backend (Fallback Mode)
-
-The app runs in fallback mode by default (`USE_LOCAL_API = false` in `index.html`):
-
-1. Simply open `index.html` directly in your browser or serve it:
-```bash
-# Python 3
-python3 -m http.server 8000
-
-# Node.js http-server
-npx http-server -p 8000
-```
-
-2. Navigate to `http://localhost:8000`
-
-In fallback mode, the app uses direct FlightRadar24 API calls through a CORS proxy (may be slower or less reliable).
-
-## API Endpoints
-
-The backend server provides the following REST API:
-
-### Health Check
-```
-GET /api/health
-```
-Returns API status.
-
-### Get Flights
-```
-GET /api/flights?north=X&south=X&west=X&east=X
-```
-Fetch flights within geographic bounds.
-
-**Parameters:**
-- `north`: Northern latitude boundary
-- `south`: Southern latitude boundary
-- `west`: Western longitude boundary
-- `east`: Eastern longitude boundary
-
-**Example:**
-```bash
-curl "http://localhost:3000/api/flights?north=51.410&south=51.200&west=6.700&east=6.980"
-```
-
-**Response:**
-```json
-{
-  "success": true,
-  "count": 5,
-  "flights": [
-    {
-      "id": "3558f123",
-      "callsign": "DLH123",
-      "flight_number": "LH123",
-      "registration": "D-AIZZ",
-      "aircraft_code": "A320",
-      "origin_iata": "DUS",
-      "destination_iata": "FRA",
-      "latitude": 51.305,
-      "longitude": 6.860,
-      "altitude": 2500,
-      "ground_speed": 245,
-      "heading": 180
-    }
-  ]
-}
-```
-
-### Get Flight Details
-```
-GET /api/flight/:id
-```
-Get detailed information about a specific flight.
-
-**Example:**
-```bash
-curl "http://localhost:3000/api/flight/3558f123"
-```
-
-### Get Airport Info
-```
-GET /api/airport/:iata
-```
-Get airport information by IATA code.
-
-**Example:**
-```bash
-curl "http://localhost:3000/api/airport/DUS"
-```
+Then navigate to `http://localhost:8000`
 
 ## Configuration
 
@@ -201,27 +70,10 @@ const REFRESH_INTERVAL_NORMAL = 30000;  // 30 seconds when moderate activity
 const REFRESH_INTERVAL_SLOW = 60000;    // 60 seconds when no activity
 ```
 
-### API Mode
-Toggle between local backend and fallback mode (default is `false`):
-
-```javascript
-const USE_LOCAL_API = false; // Set to true when running backend locally
-```
-
-## Development
-
-### Development Mode
-Run backend with auto-reload:
-```bash
-npm run dev
-```
-
-### Project Structure
+## Project Structure
 ```
 itq-plane-spotter/
-├── index.html          # Frontend web application
-├── server.js           # Backend API server
-├── package.json        # Node.js dependencies
+├── index.html          # Complete web application
 ├── .gitignore         # Git ignore rules
 └── README.md          # This file
 ```
@@ -232,12 +84,8 @@ itq-plane-spotter/
 - HTML5, CSS3, Vanilla JavaScript
 - No build process or dependencies
 
-**Backend:**
-- Node.js, Express
-- FlightRadarAPI library
-
 **Data Sources:**
-- [FlightRadar24](https://www.flightradar24.com/) - Flight tracking and scheduled flights (via FlightRadarAPI)
+- [FlightRadar24](https://www.flightradar24.com/) - Flight tracking and scheduled flights
 - [Planespotters.net](https://www.planespotters.net/) - Aircraft photos
 - [ATIS Guru](https://atis.guru/) - Runway information
 - [METAR-TAF.com](https://metar-taf.com/) - Weather data
@@ -261,52 +109,37 @@ itq-plane-spotter/
 ### Map Alignment
 The FlightRadar24 map center matches the VIEW_BOUNDS area monitored by the API.
 
-## Troubleshooting
+## Deployment
 
-### Backend not starting
-- Check if port 3000 is in use
-- Verify Node.js installation: `node --version`
-- Reinstall dependencies: `npm install`
+### GitHub Pages
+The app is deployed at: https://github-throwaway.github.io/itq-plane-spotter/
+
+To deploy your own:
+1. Fork this repository
+2. Enable GitHub Pages in repository settings
+3. Select the main branch as source
+4. Access at `https://your-username.github.io/itq-plane-spotter`
+
+## Troubleshooting
 
 ### No flights showing
 - Check browser console for errors
 - Verify internet connectivity
-- If using backend: Check backend health at `http://localhost:3000/api/health`
-- If backend is down: App will automatically use fallback mode
+- Try refreshing the page
+- Check if FlightRadar24 is accessible in your region
 
-### API rate limiting
-The FlightRadarAPI handles rate limiting automatically. For production:
-- Implement response caching
-- Increase refresh intervals
-- Consider commercial FlightRadar24 API access
-
-## Deployment
-
-### GitHub Pages (Frontend Only)
-The frontend runs standalone in fallback mode by default:
-1. Push to GitHub Pages
-2. Access at `https://username.github.io/itq-plane-spotter`
-
-### Full Deployment (with Backend)
-Deploy backend to platforms like:
-- Heroku
-- Railway
-- Render
-- DigitalOcean App Platform
-
-Update `index.html` configuration:
-```javascript
-const USE_LOCAL_API = true;
-const LOCAL_API_BASE = 'https://your-backend.herokuapp.com/api';
-```
+### CORS proxy issues
+The app uses a CORS proxy to access FlightRadar24 APIs. If you encounter issues:
+- Try a different browser
+- Check browser console for specific errors
+- Verify the CORS proxy service is operational
 
 ## License
 
-This project is for educational purposes only. The FlightRadarAPI library is unofficial and not intended for commercial use. For commercial FlightRadar24 data access, contact business@fr24.com.
+This project is for educational purposes only. FlightRadar24 data is accessed through unofficial means and not intended for commercial use. For commercial FlightRadar24 data access, contact business@fr24.com.
 
 ## Credits
 
-- [FlightRadarAPI](https://github.com/JeanExtreme002/FlightRadarAPI) by JeanExtreme002
 - [FlightRadar24](https://www.flightradar24.com/)
 - [Planespotters.net](https://www.planespotters.net/)
 - [ATIS Guru](https://atis.guru/)
