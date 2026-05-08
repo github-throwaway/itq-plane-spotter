@@ -2405,16 +2405,30 @@
                 return;
             }
 
-            // Get base runway number for image (just the number part)
+            // Render an inline SVG runway oriented to its magnetic heading
+            // (designator * 10°). Self-contained — no third-party asset to
+            // 404, hotlink-block, or render as a broken-image icon.
             const baseRunway = runway.substring(0, 2);
-            const runwayImageUrl = `https://metar-taf.com/images/rwy/3d-${baseRunway}.svg`;
+            const rwyNum = parseInt(baseRunway, 10);
+            const rotation = Number.isFinite(rwyNum) ? rwyNum * 10 : 0;
+            const oppositeNum = ((rwyNum + 17) % 36) + 1;
+            const oppositeStr = String(oppositeNum).padStart(2, '0');
 
             container.innerHTML = `
                 <div style="text-align: center;">
-                    <div style="font-size: 1.1em; font-weight: 600; color: var(--white); margin-bottom: 10px;">
+                    <div style="font-size: 1.1em; font-weight: 600; color: var(--white); margin-bottom: 16px;">
                         Active Runway ${runway}
                     </div>
-                    <img src="${runwayImageUrl}" alt="Runway ${runway}" style="width: 100%; max-width: 250px; height: auto;" onerror="this.parentElement.innerHTML='<div style=\'color: var(--white-semi); padding: 20px;\'>Runway ${runway} in use</div>'">
+                    <svg viewBox="-100 -100 200 200" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Runway ${runway}" style="width: 100%; max-width: 200px; height: auto;">
+                        <g transform="rotate(${rotation})">
+                            <rect x="-16" y="-88" width="32" height="176" rx="2" fill="#1f2937" stroke="#94a3b8" stroke-width="1"/>
+                            <rect x="-16" y="-88" width="32" height="6" fill="#f1f5f9"/>
+                            <rect x="-16" y="82" width="32" height="6" fill="#f1f5f9"/>
+                            <line x1="0" y1="-70" x2="0" y2="70" stroke="#f1f5f9" stroke-width="1.5" stroke-dasharray="8,10"/>
+                            <text x="0" y="74" fill="#f1f5f9" font-family="monospace" font-size="13" font-weight="bold" text-anchor="middle" transform="rotate(${-rotation} 0 70)">${baseRunway}</text>
+                            <text x="0" y="-66" fill="#f1f5f9" font-family="monospace" font-size="13" font-weight="bold" text-anchor="middle" transform="rotate(${-rotation} 0 -70)">${oppositeStr}</text>
+                        </g>
+                    </svg>
                 </div>
             `;
         }
