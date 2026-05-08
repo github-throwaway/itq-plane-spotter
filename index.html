@@ -1911,23 +1911,26 @@
                     departures: []
                 };
                 
+                // Match any runway designator (01-36 with optional L/R/C),
+                // not just the typical EDDL 05/23 — ATIS can announce a
+                // different runway during NOTAMs, closures, or special ops.
+                const rwyPattern = /RWY\s*(0[1-9]|[12]\d|3[0-6])([LRC]?)/i;
+
                 // Extract arrival ATIS section
                 const arrivalMatch = html.match(/Arrival ATIS[\s\S]*?<div class="atis">([\s\S]*?)<\/div>/i);
                 if (arrivalMatch) {
-                    const arrivalAtis = arrivalMatch[1];
-                    const rwyMatch = arrivalAtis.match(/RWY\s*(05[LRC]?|23[LRC]?)/i);
+                    const rwyMatch = arrivalMatch[1].match(rwyPattern);
                     if (rwyMatch) {
-                        runwayInfo.arrivals.push(rwyMatch[1].toUpperCase());
+                        runwayInfo.arrivals.push((rwyMatch[1] + rwyMatch[2]).toUpperCase());
                     }
                 }
 
                 // Extract departure ATIS section
                 const departureMatch = html.match(/Departure ATIS[\s\S]*?<div class="atis">([\s\S]*?)<\/div>/i);
                 if (departureMatch) {
-                    const departureAtis = departureMatch[1];
-                    const rwyMatch = departureAtis.match(/RWY\s*(05[LRC]?|23[LRC]?)/i);
+                    const rwyMatch = departureMatch[1].match(rwyPattern);
                     if (rwyMatch) {
-                        runwayInfo.departures.push(rwyMatch[1].toUpperCase());
+                        runwayInfo.departures.push((rwyMatch[1] + rwyMatch[2]).toUpperCase());
                     }
                 }
 
@@ -2383,21 +2386,14 @@
                 return;
             }
 
-            // Determine primary runway - prefer arrivals for runway 23, departures for runway 05
+            // Prefer the arrival runway (matches shouldShowFlight's arrival
+            // priority); fall back to the departure runway when no arrival
+            // runway is published. Works for any designator, not just 05/23.
             let runway = '';
-
-            if (activeRunways.arrivals.some(rwy => rwy.startsWith('23'))) {
-                // Get the full runway designation (e.g., 23L, 23R)
-                const arrivalRunways = activeRunways.arrivals.filter(rwy => rwy.startsWith('23'));
-                runway = arrivalRunways[0]; // Use full designation
-            } else if (activeRunways.departures.some(rwy => rwy.startsWith('05'))) {
-                // Get the full runway designation (e.g., 05L, 05R)
-                const departureRunways = activeRunways.departures.filter(rwy => rwy.startsWith('05'));
-                runway = departureRunways[0]; // Use full designation
-            } else if (activeRunways.arrivals.length > 0) {
-                runway = activeRunways.arrivals[0]; // Full designation
+            if (activeRunways.arrivals.length > 0) {
+                runway = activeRunways.arrivals[0];
             } else if (activeRunways.departures.length > 0) {
-                runway = activeRunways.departures[0]; // Full designation
+                runway = activeRunways.departures[0];
             }
 
             if (!runway) {
